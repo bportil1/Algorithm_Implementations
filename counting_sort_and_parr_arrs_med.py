@@ -120,7 +120,6 @@ def test_driver():
     print("Query Count: ", query_count)
     print("Length of Array: ", len(array1))
     print("Log of N: ", math.log(len(array1), 2))
-    print("Query Count / Number of Queries per Function Call(8): ", query_count/8)
 
     median, query_count = parallel_arrays_min_queries(len(array1), array1, array2, 0, 0, 0)
 
