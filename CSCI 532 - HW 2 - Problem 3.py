@@ -58,6 +58,7 @@ def test_driver():
     #Call function to initialize arrays
     joined_array, array1, array2 = generate_arrays(5000)
 
+    #Call to search for median
     median, query_count = parallel_arrays_min_queries(len(array1), array1, array2, 0, 0, 0)
 
     print("Query Minimizing Parallel Arrays Median Finder Evaluation")
