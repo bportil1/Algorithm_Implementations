@@ -117,37 +117,37 @@ def find_segments(x_vals, y_vals, max_segments, init_cost):
         optimal_coeffs = rebuild_opt_path(a, b, x_vals, y_vals, errors, curr_C)
         y_approx = fit_data(x_vals, optimal_coeffs)
         curr_num_segs = len(optimal_coeffs)
-        
-    plot_approximation(x_vals, y_vals, y_approx, max_segments, curr_C)
+
+    #print(optimal_coeffs)
+    plot_approximation(x_vals, y_vals, y_approx, curr_num_segs, curr_C)
     return y_approx
 
-def plot_approximation(x_vals, y_vals, y_approx, max_segments, curr_C):
+def plot_approximation(x_vals, y_vals, y_approx, curr_num_segs, curr_C):
     #Plot actual data alongside the approximation
     fig = plt.figure()
-    title_label = "SLS\n" + "(" + str(max_segments) + " segments,  " + format(curr_C, ".2f") + " cost, " + str(len(x_vals)) + " points)\n"
+    title_label = "SLS\n" + "(" + str(curr_num_segs) + " segments,  " + format(curr_C, ".2f") + " cost, " + str(len(x_vals)) + " points)\n"
     fig.suptitle(title_label, fontsize=14, fontweight='bold')
     fig.subplots_adjust(top=0.82)
     plot_1 = fig.add_subplot(121)
     plot_1.plot(x_vals, y_vals)
     plot_1.set_title("Original Data", loc="left")
     plot_2 = fig.add_subplot(122)
-    plot_2.plot(x_vals, y_approx, color="orange")
+    plot_2.plot(x_vals, y_approx, 'o-', color="orange")
     plot_2.set_title('SLS Approximation', loc="left")
     plt.show()
 
 def test_driver():
     #Generate piecewise linear components for simple, traceable examples
-    x_vals, y_vals = generate_piece_wise_linear_data(7, 40)
-    number_of_segments = 10
-    init_cost = .2
+    x_vals, y_vals = generate_piece_wise_linear_data(5, 40)
+    number_of_segments = 12
+    init_cost = .3
     y_approx = find_segments(x_vals, y_vals, number_of_segments, init_cost)
 
     #Generate non-linear data for more complicated examples
-    x_vals, y_vals = generate_non_linear_data(50)
-    number_of_segments = 10
-    init_cost = .2
+    x_vals, y_vals = generate_non_linear_data(40)
+    number_of_segments = 12
+    init_cost = .3
     y_approx = find_segments(x_vals, y_vals, number_of_segments, init_cost)
 
 if __name__ == '__main__':
     test_driver()
-
