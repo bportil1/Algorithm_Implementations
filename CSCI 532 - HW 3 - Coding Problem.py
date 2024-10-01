@@ -16,7 +16,7 @@ def generate_piece_wise_linear_data(lines: int, points: int) -> list[int]:
         
     return np.asarray(x), np.asarray(y)
 
-def generate_non_linear_data(points: int) -> tuple(list[int], list[int]):
+def generate_non_linear_data(points: int) -> tuple[list[int], list[int]]:
     #Generate non-linear data
     de_linearize = lambda X: np.cos(1.5 * np.pi * X) + np.cos( 5 * np.pi * X )
     X = np.sort(np.random.rand(points)) * 2
@@ -24,7 +24,7 @@ def generate_non_linear_data(points: int) -> tuple(list[int], list[int]):
 
     return X, y
 
-def error_coefs(x: list[int], y: list[int]) -> tuple(int, int, int):
+def error_coefs(x: list[int], y: list[int]) -> tuple[int, int, int]:
     n = len(x)
     
     if (n == 1):
@@ -45,7 +45,7 @@ def error_coefs(x: list[int], y: list[int]) -> tuple(int, int, int):
     
     return a, b, error
 
-def calculate_errors(x_vals: list[int], y_vals: list[int]) -> tuple(list[int], list[int], list[int]):  
+def calculate_errors(x_vals: list[int], y_vals: list[int]) -> tuple[list[int], list[int], list[int]]:  
     n = len(x_vals)
 
     #Arrays for all errors and corresponding terms for backtracking
@@ -60,7 +60,7 @@ def calculate_errors(x_vals: list[int], y_vals: list[int]) -> tuple(list[int], l
 
     return a_vals, b_vals, errors
 
-def rebuild_opt_path(a_vals: list[int], b_vals: list[int], x: list[int], y: list[int], errors: listint], C: int) -> list[int]:
+def rebuild_opt_path(a_vals: list[int], b_vals: list[int], x: list[int], y: list[int], errors: list[int], C: int) -> list[int]:
     n = len(errors[0])
     optimal_path = np.zeros(n)
     #Sum errors for all segments 
@@ -96,7 +96,7 @@ def rebuild_opt_path(a_vals: list[int], b_vals: list[int], x: list[int], y: list
         
     return optimal_coeffs
 
-def fit_data(x: list[int], optimal_coeffs: list[int]) -> tuple(list[int], list[int], list[int]):
+def fit_data(x: list[int], optimal_coeffs: list[int]) -> tuple[list[int], list[int], list[int]]:
     n = len(x)
     y_approx = np.zeros(n)
     y_approx_segs = []
@@ -151,13 +151,13 @@ def plot_approximation(x_vals: list[int], y_vals: list[int], y_approx: list[int]
 def test_driver() -> None:
     #Generate piecewise linear components for simple, traceable examples
     x_vals, y_vals = generate_piece_wise_linear_data(8, 50)
-    number_of_segments = 1
+    number_of_segments = 15
     init_cost = .3
     y_approx = find_segments(x_vals, y_vals, number_of_segments, init_cost)
 
     #Generate non-linear data for more complicated examples
     x_vals, y_vals = generate_non_linear_data(50)
-    number_of_segments = 1
+    number_of_segments = 15
     init_cost = .3
     y_approx = find_segments(x_vals, y_vals, number_of_segments, init_cost)
 
