@@ -16,7 +16,7 @@ def generate_piece_wise_linear_data(lines: int, points: int) -> list[int]:
         
     return np.asarray(x), np.asarray(y)
 
-def generate_non_linear_data(points):
+def generate_non_linear_data(points: int) -> tuple(list[int], list[int]):
     #Generate non-linear data
     de_linearize = lambda X: np.cos(1.5 * np.pi * X) + np.cos( 5 * np.pi * X )
     X = np.sort(np.random.rand(points)) * 2
@@ -24,18 +24,19 @@ def generate_non_linear_data(points):
 
     return X, y
 
-
-def error_coefs(x, y):
+def error_coefs(x: list[int], y: list[int]) -> tuple(int, int, int):
     n = len(x)
     
     if (n == 1):
         return (0.0, y[0], 0.0)
 
-    #Compute terms for minimum error line calculation     
+    #Compute terms for minimum error line calculation and error     
     x_sum = np.sum(x)
     y_sum = np.sum(y)
     x_y_prod = np.sum(x * y)
     x_sq_sum = np.sum(x ** 2)
+    if ((n*x_sq_sum - x_sum*x_sum) == 0):
+        return (0.0, y[0], 0.0)
     a = (n*x_y_prod - x_sum*y_sum) / (n*x_sq_sum - x_sum*x_sum)
     b = (y_sum - a*x_sum) / n
 
@@ -44,7 +45,7 @@ def error_coefs(x, y):
     
     return a, b, error
 
-def calculate_errors(x_vals, y_vals):  
+def calculate_errors(x_vals: list[int], y_vals: list[int]) -> tuple(list[int], list[int], list[int]):  
     n = len(x_vals)
 
     #Arrays for all errors and corresponding terms for backtracking
@@ -59,7 +60,7 @@ def calculate_errors(x_vals, y_vals):
 
     return a_vals, b_vals, errors
 
-def rebuild_opt_path(a_vals, b_vals, x, y, errors, C):
+def rebuild_opt_path(a_vals: list[int], b_vals: list[int], x: list[int], y: list[int], errors: listint], C: int) -> list[int]:
     n = len(errors[0])
     optimal_path = np.zeros(n)
     #Sum errors for all segments 
@@ -95,19 +96,24 @@ def rebuild_opt_path(a_vals, b_vals, x, y, errors, C):
         
     return optimal_coeffs
 
-def fit_data(x, optimal_coeffs):
+def fit_data(x: list[int], optimal_coeffs: list[int]) -> tuple(list[int], list[int], list[int]):
     n = len(x)
     y_approx = np.zeros(n)
+    y_approx_segs = []
+    indices = []
     #Approximate data using previously generated optimal path
     for opt_coeff in optimal_coeffs:
         ind = [i for i,elem in enumerate(x) if elem >= opt_coeff[0] and elem <= opt_coeff[1]]
-        y_approx[ind] = x[ind] * opt_coeff[2] + opt_coeff[3]
-    return y_approx
+        y_approx_val = x[ind] * opt_coeff[2] + opt_coeff[3]
+        y_approx[ind] = y_approx_val
+        indices.append(ind)
+        y_approx_segs.append(y_approx_val)
+    return y_approx, indices, y_approx_segs
 
-def find_segments(x_vals, y_vals, max_segments, init_cost):
+def find_segments(x_vals: list[int], y_vals: list[int], max_segments: int, init_cost: float) -> list[int]:
     curr_C = init_cost
     curr_num_segs = float('inf')
-    y_approx = 0
+    y_approx = []
 
     #Reapproximate data model by increasing error term until only the maximum
     #number of segments are used
@@ -115,37 +121,43 @@ def find_segments(x_vals, y_vals, max_segments, init_cost):
         curr_C += .05
         a, b, errors = calculate_errors(x_vals, y_vals)
         optimal_coeffs = rebuild_opt_path(a, b, x_vals, y_vals, errors, curr_C)
-        y_approx = fit_data(x_vals, optimal_coeffs)
+        y_approx, indices, y_approx_segs = fit_data(x_vals, optimal_coeffs)
         curr_num_segs = len(optimal_coeffs)
 
     #print(optimal_coeffs)
-    plot_approximation(x_vals, y_vals, y_approx, curr_num_segs, curr_C)
+    plot_approximation(x_vals, y_vals, y_approx, indices, y_approx_segs, curr_num_segs, curr_C)
     return y_approx
 
-def plot_approximation(x_vals, y_vals, y_approx, curr_num_segs, curr_C):
-    #Plot actual data alongside the approximation
-    fig = plt.figure()
+def plot_approximation(x_vals: list[int], y_vals: list[int], y_approx: list[int], indices: list[int], y_approx_segs: list[int], curr_num_segs: int, curr_C: float) -> None:
+    fig = plt.figure(figsize=(8,4), constrained_layout=True)
     title_label = "SLS\n" + "(" + str(curr_num_segs) + " segments,  " + format(curr_C, ".2f") + " cost, " + str(len(x_vals)) + " points)\n"
     fig.suptitle(title_label, fontsize=14, fontweight='bold')
     fig.subplots_adjust(top=0.82)
-    plot_1 = fig.add_subplot(121)
+    #Plot actual data
+    plot_1 = fig.add_subplot(131)
     plot_1.plot(x_vals, y_vals)
     plot_1.set_title("Original Data", loc="left")
-    plot_2 = fig.add_subplot(122)
-    plot_2.plot(x_vals, y_approx, 'o-', color="orange")
-    plot_2.set_title('SLS Approximation', loc="left")
+    #Plot disconnected segments
+    plot_2 = fig.add_subplot(132)
+    for idx in range(len(y_approx_segs)):
+        plot_2.plot(indices[idx], y_approx_segs[idx], '-', color='orange')
+    plot_2.set_title('Unconnected Segments', loc="left")
+    #Plot connected segments
+    plot_3 = fig.add_subplot(133)
+    plot_3.plot(x_vals, y_approx, 'o-', color="green")
+    plot_3.set_title("Connected Segments")
     plt.show()
 
-def test_driver():
+def test_driver() -> None:
     #Generate piecewise linear components for simple, traceable examples
-    x_vals, y_vals = generate_piece_wise_linear_data(5, 40)
-    number_of_segments = 12
+    x_vals, y_vals = generate_piece_wise_linear_data(8, 50)
+    number_of_segments = 1
     init_cost = .3
     y_approx = find_segments(x_vals, y_vals, number_of_segments, init_cost)
 
     #Generate non-linear data for more complicated examples
-    x_vals, y_vals = generate_non_linear_data(40)
-    number_of_segments = 12
+    x_vals, y_vals = generate_non_linear_data(50)
+    number_of_segments = 1
     init_cost = .3
     y_approx = find_segments(x_vals, y_vals, number_of_segments, init_cost)
 
