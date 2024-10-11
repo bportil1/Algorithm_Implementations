@@ -15,98 +15,89 @@ from sklearn import datasets
 
 np.set_printoptions(threshold=sys.maxsize)
 
-##### STEP 0 - Preprocess Data
 
-#ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data_edited_labels.csv'
+def preprocess_data():
+    ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
 
-ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
+    #ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
 
-ids_train_data = pd.read_csv(ids_train_file)
+    ids_train_data = pd.read_csv(ids_train_file)
 
-#ids_cut_data = pd.read_csv(ids_train_file)
+    label_encoder = LabelEncoder()
 
-#ids_train_true_labels_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
+    ids_train_data['protocol_type'] = label_encoder.fit_transform(ids_train_data['protocol_type'])
 
-#ids_train_true_labels = pd.read_csv(ids_train_true_labels_file)
+    ids_train_data['service'] = label_encoder.fit_transform(ids_train_data['service'])
 
-#ids_train_true_labels = ids_train_true_labels['class'].to_list()
+    ids_train_data['flag'] = label_encoder.fit_transform(ids_train_data['flag'])
 
-#print(ids_train_true_labels)
+    train_labels = ids_train_data['class'] 
 
-#ids_test_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Test_data.csv'
+    ids_train_no_labels = ids_train_data.loc[:, ids_train_data.columns != 'class']
 
-#ids_test_data = pd.read_csv(ids_test_file)
 
-#print(ids_test_data)
+    return ids_train_no_labels, train_labels
 
-label_encoder = LabelEncoder()
+def generate_graph(train_data):
+    print("Generating Graph")
+    train_data_graph = kneighbors_graph(train_data , n_neighbors=20, mode='distance', metric='minkowski', p=1, include_self=False, n_jobs=-1)
 
-###### train data categorical to numerical
+    return train_data_graph
 
-ids_train_data['protocol_type'] = label_encoder.fit_transform(ids_train_data['protocol_type'])
+def optimize_spread_param(): 
 
-ids_train_data['service'] = label_encoder.fit_transform(ids_train_data['service'])
+    return 0
 
-ids_train_data['flag'] = label_encoder.fit_transform(ids_train_data['flag'])
+def generate_edge_weights(train_data, train_data_graph):
+    print("Generating Edge Weights")
+    col_indices = train_data_graph.indices
+    row_indices = train_data_graph.indptr
+    point_weight = train_data_graph.data
 
-train_labels = ids_train_data['class'] #label_encoder.fit_transform(ids_train_data['class'])
+    similarity_matrix = np.zeros((train_data_graph.shape[0], train_data_graph.shape[0]))
 
-##### STEP 1 - Generate graph data #####
-
-print("Generating Graph Data")
-
-### Graph version of data
-
-ids_train_no_labels = ids_train_data.loc[:, ids_train_data.columns != 'class']
-
-train_data_graph = kneighbors_graph(ids_train_no_labels , n_neighbors=5, mode='connectivity', metric='minkowski', p=1, include_self=False, n_jobs=-1)
-
-#print(train_data_graph)
-
-#print(train_data_graph)
-col_indices = train_data_graph.indices
-row_indices = train_data_graph.indptr
-point_weight = train_data_graph.data
-
-similarity_matrix = np.zeros((train_data_graph.shape[0], train_data_graph.shape[0]))
-
-for idx in range(train_data_graph.shape[0]):
+    for idx in range(train_data_graph.shape[0]):
               
-    point = slice(train_data_graph.indptr[idx], train_data_graph.indptr[idx+1])
+        point = slice(train_data_graph.indptr[idx], train_data_graph.indptr[idx+1])
 
-    gamma = 1
-    
-    point1 = np.asarray(ids_train_no_labels.loc[[idx]])
+        gamma = 1 
 
-    for vertex in train_data_graph.indices[point]:
-        point2 = np.asarray(ids_train_no_labels.loc[[vertex]])
+        point1 = np.asarray(train_data.loc[[idx]])
 
-        intermed_res = 0
+        for vertex in train_data_graph.indices[point]:
+            point2 = np.asarray(train_data.loc[[vertex]])
 
-        for feature in range(len(point2[0])):
+            intermed_res = 0
 
-            intermed_res += (point1[0][feature] - point2[0][feature]) ** 2 / gamma
+            for feature in range(len(point2[0])):
 
-        similarity_matrix[idx][vertex] = exp(-intermed_res)
+                intermed_res += (point1[0][feature] - point2[0][feature]) ** 2 / gamma
 
-##### STEP 2 - Generate edge weights #####
+            similarity_matrix[idx][vertex] = exp(-intermed_res)
 
-print("Generating Edge Weights")
+    return similarity_matrix
 
-##### STEP 3 - Estimating node labels ##### 
+def estimate_node_labels(adjacency_matrix, true_labels=None):
+    label_prop_model = LabelPropagation(n_jobs=-1)
 
-print("Label Propagation")
+    label_prop_model.fit(adjacency_matrix, true_labels)
 
-### Label Prop
+    data_predict = label_prop_model.score(adjacency_matrix, true_labels)
 
-label_prop_model = LabelPropagation(n_jobs=-1)
+    print(data_predict)
 
-label_prop_model.fit(similarity_matrix, train_labels)
+    return 0
 
-data_predict = label_prop_model.score(similarity_matrix, train_labels)
+def measure_accuracy():
 
-print(data_predict)
+    return 0
 
+if __name__ == '__main__':
+    data, labels = preprocess_data()
+    graph = generate_graph(data)
+    adj_matr = generate_edge_weights(data, graph)
+    estimate_node_labels(adj_matr, labels)
+'''
 ### Spectral Clustering
 
 spectral_clustering = SpectralClustering(n_clusters=2, affinity='precomputed', gamma=.5, n_jobs=-1)
@@ -115,3 +106,4 @@ labels = spectral_clustering.fit_predict(similarity_matrix)
 print(labels.labels_)
 print(np.count_nonzero(labels.labels_ == train_labels))
 print("End of Script")
+'''
