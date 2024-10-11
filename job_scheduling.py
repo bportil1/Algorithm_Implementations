@@ -1,20 +1,16 @@
 def schedule_jobs(jobs):
-    # Each job is a tuple (pi, fi)
-    # Compute ratios and sort jobs
-    #jobs.sort(key=lambda x: x[1] / x[0], reverse=True)
-    jobs.sort(key=lambda x: x[1], reverse=True)
 
-    print(jobs)
+    #Sort jobs by longest time spent in the finishing step, i.e. by decreasing f
+    jobs.sort(key=lambda x: x[1], reverse=True)
 
     current_time = 0
     finish_times = []
 
-    for pi, fi in jobs:
-        current_time += pi  # Time spent on the supercomputer
-        finish_time = current_time + fi  # Time when job will finish on PC
+    for p, f in jobs:
+        current_time += p
+        finish_time = current_time + f
         finish_times.append(finish_time)
-    print(finish_times)
-    # The completion time is the maximum of the finish times
+    
     return max(finish_times)
 
 jobs=[(2,5), (3,5), (7,9)]
