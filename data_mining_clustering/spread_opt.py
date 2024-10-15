@@ -1,6 +1,9 @@
 import numpy as np
 from multiprocessing import Pool
 from multiprocessing import cpu_count
+from decimal import *
+from math import isclose
+
 
 def similarity_function(train_data, gamma, pt1_idx, pt2_idx):
     point1 = np.asarray(train_data.loc[[pt1_idx]])
@@ -10,7 +13,7 @@ def similarity_function(train_data, gamma, pt1_idx, pt2_idx):
 
     for feature in range(len(point2[0])):
         temp_res += (point1[0][feature] - point2[0][feature]) ** 2 / gamma[feature]
-    return np.exp(-temp_res)
+    return np.exp(-temp_res, dtype=np.float128)
 
 def objective_computation(train_data, train_data_graph, gamma, section):
     approx_error = 0
@@ -80,9 +83,15 @@ def gradient_computation(train_data, train_data_graph, gamma, section):
             dW_vals = dW_dsigma(point1, point2, idx, vertex, train_data, gamma)
             sec_term_1 += dW_vals* train_data.loc[[vertex]].to_numpy()[0]
             sec_term_2 = sec_term_2 + dW_vals
-        if dii > 0:
-            x_hat = np.divide(x_hat, dii, dtype=np.float128)
-            leading_term_2 = np.divide((train_data.loc[[idx]].to_numpy()[0] - x_hat), dii, dtype=np.float128)
+        if dii > 0 and not isclose(dii, 0, abs_tol=1e-9):
+            #print(np.finfo(np.float128))
+            #print(dii)
+            x_hat = np.divide(x_hat, dii, casting='unsafe', dtype=np.longdouble)
+            leading_term_2 = np.divide((train_data.loc[[idx]].to_numpy()[0] - x_hat), dii, casting='unsafe', dtype=np.longdouble)
+    
+            #leading_term_2 = leading_term_2.astype(np.float128)
+            #x_hat = np.float128(x_hat/dii)
+            #leading_term_2 = np.float128((train_data.loc[[idx]].to_numpy()[0] - x_hat) / dii)
         else:
             x_hat = 0
             leading_term_2 = np.zeros(len(point2[0]))
