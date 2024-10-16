@@ -8,6 +8,7 @@ from sklearn.cluster import SpectralClustering
 from math import exp
 from spread_opt import *
 from lower_dim_mappings_utils import *
+from preprocessing_utils import *
 from sklearn.model_selection import train_test_split
 from multiprocessing.sharedctypes import RawArray
 
@@ -20,41 +21,6 @@ import numpy as np
 from sklearn import datasets
 
 np.set_printoptions(threshold=sys.maxsize)
-
-def preprocess_data():
-    #ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
-
-    ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
-
-    #ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Test_data.csv'
-
-    ids_train_data = pd.read_csv(ids_train_file)
-
-    label_encoder = LabelEncoder()
-
-    ids_train_data['protocol_type'] = label_encoder.fit_transform(ids_train_data['protocol_type'])
-
-    ids_train_data['service'] = label_encoder.fit_transform(ids_train_data['service'])
-
-    ids_train_data['flag'] = label_encoder.fit_transform(ids_train_data['flag'])
-
-    ids_train_data = ids_train_data.sample(frac=1)
-
-    train_set, test_set = train_test_split(ids_train_data, test_size = .2)
-
-    train_set = train_set.reset_index(drop=True)
-
-    test_set = test_set.reset_index(drop=True)
-
-    train_data = train_set.loc[:, train_set.columns != 'class']
-
-    train_labels = train_set['class']
-
-    test_data = test_set.loc[:, test_set.columns != 'class']
-
-    test_labels = test_set['class']
-
-    return train_data, train_labels, test_data, test_labels
 
 def generate_graph(train_data):
     print("Generating Graph")
@@ -124,7 +90,7 @@ def estimate_node_labels(adjacency_matrix, true_labels):
     return data_predict
 
 if __name__ == '__main__':
-    train_data, train_labels, test_data, test_labels = preprocess_data()
+    train_data, train_labels, test_data, test_labels = preprocess_ids_data()
 
     visualization_tester(train_data, train_labels)
 

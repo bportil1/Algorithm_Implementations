@@ -11,8 +11,8 @@ def similarity_function(train_data, gamma, pt1_idx, pt2_idx):
 
     for feature in range(len(point2[0])):
         temp_res += (point1[0][feature] - point2[0][feature]) ** 2 / (gamma[feature]) ** 2
-    ##### this exponent op is rarely returing an overflow, not sure the type of value thats causing it
-    print(temp_res)
+    ##### this exponent op is rarely returing an overflow, not sure the type of value thats causing it, seems stable up to 5 iterations
+    #print(temp_res)
     return np.exp(-temp_res, dtype=np.longdouble)
 
 def objective_computation(train_data, train_data_graph, gamma, section):
