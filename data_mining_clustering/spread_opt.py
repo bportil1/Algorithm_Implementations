@@ -1,9 +1,7 @@
 import numpy as np
 from multiprocessing import Pool
 from multiprocessing import cpu_count
-from decimal import *
 from math import isclose
-
 
 def similarity_function(train_data, gamma, pt1_idx, pt2_idx):
     point1 = np.asarray(train_data.loc[[pt1_idx]])
@@ -12,8 +10,10 @@ def similarity_function(train_data, gamma, pt1_idx, pt2_idx):
     temp_res = 0
 
     for feature in range(len(point2[0])):
-        temp_res += (point1[0][feature] - point2[0][feature]) ** 2 / gamma[feature]
-    return np.exp(-temp_res, dtype=np.float128)
+        temp_res += (point1[0][feature] - point2[0][feature]) ** 2 / (gamma[feature]) ** 2
+    ##### this exponent op is rarely returing an overflow, not sure the type of value thats causing it
+    print(temp_res)
+    return np.exp(-temp_res, dtype=np.longdouble)
 
 def objective_computation(train_data, train_data_graph, gamma, section):
     approx_error = 0
@@ -44,24 +44,6 @@ def objective_function(train_data, train_data_graph, gamma):
                                                              for section in split_data]
 
         error = [error.get() for error in errors]
-
-    '''
-    approx_error = 0
-    for idx in range(train_data_graph.shape[0]):
-        points = slice(train_data_graph.indptr[idx], train_data_graph.indptr[idx+1])
-        dii = 0
-        x_hat = 0
-        temp_sum = 0
-        for vertex in train_data_graph.indices[points]:
-            wij = similarity_function(train_data, gamma, idx, vertex) 
-            dii += wij
-            temp_sum = wij * np.asarray(train_data.loc[[vertex]])
-        if dii > 0:
-            temp_sum /= dii
-        else:
-            temp_sum = np.zeros(len(gamma))
-        approx_error += np.sqrt(np.abs(np.asarray(train_data.loc[[idx]])**2 - temp_sum**2)) 
-    '''
     return np.sum(error)
 
 def gradient_computation(train_data, train_data_graph, gamma, section):
@@ -84,14 +66,8 @@ def gradient_computation(train_data, train_data_graph, gamma, section):
             sec_term_1 += dW_vals* train_data.loc[[vertex]].to_numpy()[0]
             sec_term_2 = sec_term_2 + dW_vals
         if dii > 0 and not isclose(dii, 0, abs_tol=1e-9):
-            #print(np.finfo(np.float128))
-            #print(dii)
             x_hat = np.divide(x_hat, dii, casting='unsafe', dtype=np.longdouble)
             leading_term_2 = np.divide((train_data.loc[[idx]].to_numpy()[0] - x_hat), dii, casting='unsafe', dtype=np.longdouble)
-    
-            #leading_term_2 = leading_term_2.astype(np.float128)
-            #x_hat = np.float128(x_hat/dii)
-            #leading_term_2 = np.float128((train_data.loc[[idx]].to_numpy()[0] - x_hat) / dii)
         else:
             x_hat = 0
             leading_term_2 = np.zeros(len(point2[0]))
@@ -108,8 +84,6 @@ def gradient_function(train_data, train_data_graph, gamma):
     
     split_data = split(range(train_data_graph.shape[0]), cpu_count())
 
-    #print(split_data)
-
     with Pool(processes=cpu_count()) as pool:
         gradients = [pool.apply_async(gradient_computation, (train_data, train_data_graph \
                                                              , gamma, section)) \
@@ -117,33 +91,6 @@ def gradient_function(train_data, train_data_graph, gamma):
 
         gradients = [gradient.get() for gradient in gradients]
 
-    '''
-    for idx in range(train_data_graph.shape[0]):
-        
-        points = slice(train_data_graph.indptr[idx], train_data_graph.indptr[idx+1])
-        dii = 0
-        x_hat = 0
-        sec_term_1 = 0
-        sec_term_2 = np.zeros(train_data.loc[[0]].shape[1])
-
-        point1 = np.asarray(train_data.loc[[idx]])
-        for vertex in train_data_graph.indices[points]:
-            point2 = np.asarray(train_data.loc[[vertex]])
-            wij = similarity_function(train_data, gamma, idx, vertex) 
-            dii += wij 
-            x_hat += wij*train_data.loc[[vertex]].to_numpy()[0] 
-            dW_vals = dW_dsigma(point1, point2, idx, vertex, train_data, gamma)
-            sec_term_1 += dW_vals* train_data.loc[[vertex]].to_numpy()[0] 
-            sec_term_2 = sec_term_2 + dW_vals
-        if dii > 0:
-            x_hat = np.divide(x_hat, dii, dtype=np.float128) 
-            leading_term_2 = np.divide((train_data.loc[[idx]].to_numpy()[0] - x_hat), dii, dtype=np.float128)
-        else:
-            x_hat = 0
-            leading_term_2 = np.zeros(len(point2[0]))
-        sec_term_2 = sec_term_2 * x_hat 
-        gradient = gradient + (leading_term_2.T * (sec_term_1 - sec_term_2))
-        '''
     gradient = np.zeros(train_data.loc[[0]].shape[1])
     for grad in gradients:
         gradient = gradient + grad
@@ -176,7 +123,6 @@ def gradient_descent(learning_rate, num_iterations, tol, train_data, train_data_
         print("Computing Error")
         curr_error = objective_function(train_data, train_data_graph, gamma)
         print("Current Error: ", curr_error)
-        #if np.all(curr_error < tol):
         if curr_error < tol:
             break
         print("Gamma: ", gamma)
@@ -185,11 +131,3 @@ def gradient_descent(learning_rate, num_iterations, tol, train_data, train_data_
         print("Updated Gamma: ", gamma)
     print("Completed Gradient Descent")
     return gamma
-
-'''
-# Perform gradient descent and plot the results
-start_x, start_y = 8, 8
-learning_rate = 0.1
-num_iterations = 20
-x_opt, y_opt, f_opt, history = gradient_descent(start_x, start_y, learning_rate, num_iterations)
-'''

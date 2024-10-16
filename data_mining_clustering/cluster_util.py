@@ -19,15 +19,9 @@ import pickle
 def clustering_training(output_path, cluster_alg_name):
     save_model = True
     for ndim in ndims_list:
-        print('Dimensions = ', ndim)
-
-        # load data
-        #train_vector = pd.read_csv(vector_path, header=None).values
-
-        # vector = StandardScaler().fit_transform(train_vector)
-        scaler = MaxAbsScaler()
-        scaler.fit(train_vector)
-        vector = scaler.transform(train_vector)
+        #scaler = MaxAbsScaler()
+        #scaler.fit(train_vector)
+        #vector = scaler.transform(train_vector)
 
         train_df = pd.read_csv(label_path)
         train_vector_labels = train_df['Label'].tolist()
