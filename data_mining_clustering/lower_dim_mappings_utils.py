@@ -62,21 +62,21 @@ def visualization_tester(X, y):
     #standard lle dying sometimes because of a singular value matrix?, swapping eigensolver to dense upped the computation time substantially but ran on initial trial
     embeddings = {
         "Truncated SVD embedding": TruncatedSVD(n_components=3),
-        "Standard LLE embedding": LocallyLinearEmbedding(
-            n_neighbors=n_neighbors, n_components=3, method="standard", 
-            eigen_solver='dense', n_jobs=-1
-        ),
+        #"Standard LLE embedding": LocallyLinearEmbedding(
+        #    n_neighbors=n_neighbors, n_components=3, method="standard", 
+        #    eigen_solver='dense', n_jobs=-1
+        #),
         "Random Trees embedding": make_pipeline(
             RandomTreesEmbedding(n_estimators=200, max_depth=5, random_state=0, n_jobs=-1),
             TruncatedSVD(n_components=3),
         ),
-        "t-SNE embedding": TSNE(
-            n_components=3,
-            max_iter=500,
-            n_iter_without_progress=150,
-            n_jobs=-1,
-            random_state=0,
-        ),
+        #"t-SNE embedding": TSNE(
+        #    n_components=3,
+        #    max_iter=500,
+        #    n_iter_without_progress=150,
+        #    n_jobs=-1,
+        #    random_state=0,
+        #),
     }
 
     projections, timing = {}, {}

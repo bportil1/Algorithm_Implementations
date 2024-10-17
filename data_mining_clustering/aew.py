@@ -11,8 +11,7 @@ from lower_dim_mappings_utils import *
 from preprocessing_utils import *
 from sklearn.model_selection import train_test_split
 from multiprocessing.sharedctypes import RawArray
-
-
+from clustering import *
 
 import sys
 
@@ -94,15 +93,26 @@ if __name__ == '__main__':
 
     visualization_tester(train_data, train_labels)
 
+    data_path = './orig_data/'
+
+    clustering1 = clustering(train_data, train_labels, test_data, test_labels, data_path)
+
+    clustering1.clustering_training()
+
     graph = generate_graph(train_data)
 
     train_adj_matr, gamma = generate_optimal_edge_weights(train_data, graph, 5)
 
-    #test_graph = generate_graph(test_data)
+    test_graph = generate_graph(test_data)
 
-    #test_adj_matr = generate_edge_weights(test_data, test_graph, gamma)
+    test_adj_matr = generate_edge_weights(test_data, test_graph, gamma)
 
     predicted_labels = estimate_node_labels(train_adj_matr, train_labels)
 
     visualization_tester(train_adj_matr, predicted_labels)
+
+    data_path = './after_aew/'
+
+    clustering2 = clustering(train_adj_matr, train_labels, test_adj_matr, test_labels, data_path)
+    clustering2.clustering_training()
 

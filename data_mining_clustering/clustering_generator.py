@@ -1,9 +1,10 @@
-def generate_DBSCAN(vector, labels, eps, min_samples, twoD_vector):
-    _, ndim = vector.shape
+def generate_DBSCAN(data, labels, eps, min_samples):
 
     # Get results for DBSCAN clustering algorithm
-    clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(vector)
+    clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(data)
     # Get DBSCAN cluster labels
+    
+    '''
     cluster_DBSCAN_Labels = clustering.labels_
 
     core_samples_mask = np.zeros_like(clustering.labels_, dtype=bool)
@@ -23,12 +24,13 @@ def generate_DBSCAN(vector, labels, eps, min_samples, twoD_vector):
         "Adjusted Mutual Information: %0.3f"
         % metrics.adjusted_mutual_info_score(labels, cluster_DBSCAN_Labels)
     )
+    '''
+    '''
     # print("Silhouette Coefficient: %0.3f" % metrics.silhouette_score(vector, cluster_DBSCAN_Labels))
     # confusion_matrix()
 
     # #############################################################################
     # Plot result
-
     # Black removed and is used for noise instead.
     unique_labels = set(cluster_DBSCAN_Labels)
     colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
@@ -53,6 +55,7 @@ def generate_DBSCAN(vector, labels, eps, min_samples, twoD_vector):
               + '\n eps = '+str(eps))
     fig = plt.gcf()
     plt.clf()
+    '''
     return clustering, fig
 
 def generate_AgglomerativeCluster(vector, labels, twoD_vector, n_cluster =2 , linkage = 'ward' ):
