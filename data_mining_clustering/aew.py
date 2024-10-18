@@ -91,9 +91,11 @@ def estimate_node_labels(adjacency_matrix, true_labels):
 if __name__ == '__main__':
     train_data, train_labels, test_data, test_labels = preprocess_ids_data()
 
-    visualization_tester(train_data, train_labels)
+    #visualization_tester(train_data, train_labels)
 
     data_path = './orig_data/'
+
+    print('#####Initial Data#####')
 
     clustering1 = clustering(train_data, train_labels, test_data, test_labels, data_path)
 
@@ -101,18 +103,19 @@ if __name__ == '__main__':
 
     graph = generate_graph(train_data)
 
-    train_adj_matr, gamma = generate_optimal_edge_weights(train_data, graph, 5)
-
+    train_adj_matr, gamma = generate_optimal_edge_weights(train_data, graph, 1)
+    
     test_graph = generate_graph(test_data)
 
     test_adj_matr = generate_edge_weights(test_data, test_graph, gamma)
 
     predicted_labels = estimate_node_labels(train_adj_matr, train_labels)
 
-    visualization_tester(train_adj_matr, predicted_labels)
+    print('#####AEW Data#####')
+
+    #visualization_tester(train_adj_matr, predicted_labels)
 
     data_path = './after_aew/'
 
     clustering2 = clustering(train_adj_matr, train_labels, test_adj_matr, test_labels, data_path)
     clustering2.clustering_training()
-

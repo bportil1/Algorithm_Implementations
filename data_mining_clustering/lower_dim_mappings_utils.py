@@ -89,4 +89,4 @@ def visualization_tester(X, y):
     for name in timing:
         title = f"{name} (time {timing[name]:.3f}s)"
         plot_ids_embedding(projections[name], y, title)
-    return 0
+    return

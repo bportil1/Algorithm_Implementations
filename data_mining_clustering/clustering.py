@@ -20,12 +20,11 @@ class clustering():
         self.data_path = data_path
         self.clustering_methods = ['Kmeans', 'Agglomerative', 'DBSCAN']
 
-
     def get_clustering_hyperparams(self, cluster_alg):
 
         if cluster_alg == 'Kmeans':
             hyper_para_name = 'n_clusters'
-            random_state = 0
+            random_state = 0 
             hyper_para_list = [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20]
         elif cluster_alg == 'spectral':
             hyper_para_name = 'n_clusters'
@@ -82,9 +81,9 @@ class clustering():
 
                     test_pred = clustering_model.fit_predict(self.test_data)
 
-            eval, cntg = self.cluster_evaluation(test_pred, self.test_labels)
+                eval, cntg = self.cluster_evaluation(test_pred, self.test_labels)
 
-            print("Accuracy: ", accuracy_score(test_pred, self.test_labels))
+                print("Accuracy: ", accuracy_score(test_pred, self.test_labels))
 
             cluster_valuation = pd.concat([cluster_valuation, eval], ignore_index=True)
             
