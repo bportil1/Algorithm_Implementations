@@ -44,6 +44,8 @@ def plot_ids_embedding(X, labels, title):
                         'label': labels })
     #_,  ax = plt.subplots()
     
+
+
     for g in np.unique(labels):
         idx = np.where(labels == g)
 
@@ -54,24 +56,25 @@ def plot_ids_embedding(X, labels, title):
         fig.update_layout(
             title = title
         )
+    fig.to_html(full_html=True, div_id='test')
     fig.show()
 
 
-def visualization_tester(X, y):
+def visualization_tester(X, y, num_components, display = 'no'):
     n_neighbors = 20
     #standard lle dying sometimes because of a singular value matrix?, swapping eigensolver to dense upped the computation time substantially but ran on initial trial
     embeddings = {
-        "Truncated SVD embedding": TruncatedSVD(n_components=3),
+        "Truncated SVD embedding": TruncatedSVD(n_components=num_components),
         #"Standard LLE embedding": LocallyLinearEmbedding(
-        #    n_neighbors=n_neighbors, n_components=3, method="standard", 
+        #    n_neighbors=n_neighbors, n_components=num_components, method="standard", 
         #    eigen_solver='dense', n_jobs=-1
         #),
         "Random Trees embedding": make_pipeline(
             RandomTreesEmbedding(n_estimators=200, max_depth=5, random_state=0, n_jobs=-1),
-            TruncatedSVD(n_components=3),
+            TruncatedSVD(n_components=num_components),
         ),
         "t-SNE embedding": TSNE(
-            n_components=3,
+            n_components=num_components,
             max_iter=500,
             n_iter_without_progress=150,
             n_jobs=-1,
@@ -86,9 +89,10 @@ def visualization_tester(X, y):
         projections[name] = transformer.fit_transform(X, y)
         timing[name] = time() - start_time
 
-    for name in timing:
-        title = f"{name} (time {timing[name]:.3f}s)"
-        plot_ids_embedding(projections[name], y, title)
-    retu
+    if display == 'display':
 
-    rn projections
+        for name in timing:
+            title = f"{name} (time {timing[name]:.3f}s)"
+            plot_ids_embedding(projections[name], y, title)
+    
+    return projections

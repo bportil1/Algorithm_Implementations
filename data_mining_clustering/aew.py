@@ -210,122 +210,115 @@ if __name__ == '__main__':
 
     test_labels = test_labels['class']
    
-    train_3d = visualization_tester(train_data, train_labels)
+    #train_3d = visualization_tester(train_data, train_labels)
 
-    test_3d = visualization_tester(test_data, test_labels)
+    #test_3d = visualization_tester(test_data, test_labels)
 
     estimate_node_labels(train_data, train_labels, test_data, test_labels)
 
-    #projections = visualization_tester(graph, train_labels)
+    graph = generate_graph(train_data)
 
-    #test_proj = visualization_tester(test_graph, test_labels)
+    train_adj_matr, gamma = generate_optimal_edge_weights(train_data, graph, 0)
 
-    #print(projections.keys())
+    graph = rewrite_edges(graph, train_adj_matr)
 
-    #for projection in projections.keys():
-    for projection in train_3d.keys():
+    test_graph = generate_graph(test_data)
 
-        print(projection)
+    test_adj_matr = generate_edge_weights(test_data, test_graph, gamma)
 
-        train_data = train_3d[projection]
+    test_graph = rewrite_edges(test_graph, test_adj_matr)
 
-        test_data = test_3d[projection]
+    graph = graph.toarray()
 
-        graph = generate_graph(train_data)
+    test_graph = test_graph.toarray()
 
-        print(test_data)
+    num_components = [3, 6, 8, 10, 12, 14, 16, 18, 20, 25, 30, 35, 40, 75, 100]
 
+    for num_com in num_components:
 
-        train_data = pd.DataFrame(data=train_data[0:,0:],
-                                  columns=['0', '1', '2'])
+        print("Current number of components: ", num_com)
 
-        test_data = pd.DataFrame(data=test_data[0:,0:],
-                                  columns=['0', '1', '2'])
+        projections = visualization_tester(graph, train_labels, num_com, 'no')
 
-        print(test_data)
+        test_proj = visualization_tester(test_graph, test_labels, num_com, 'no')
 
+        for projection in projections.keys():
+   
+            print("Projection Type: ", projection)
 
-        train_adj_matr, gamma = generate_optimal_edge_weights(train_data, graph, 1)
+            train_data = projections[projection]
 
-        graph = rewrite_edges(graph, train_adj_matr)
+            test_data = test_proj[projection]
 
-        test_graph = generate_graph(test_data)
+            visualization_tester(train_data, train_labels, 3, 'display')
 
-        test_adj_matr = generate_edge_weights(test_data, test_graph, gamma)
+            visualization_tester(test_data, test_labels, 3, 'display')
 
-        test_graph = rewrite_edges(test_graph, test_adj_matr)
+            '''
+            hyper_para_list = np.arange(2, 31, step = 1)
 
-        graph = graph.toarray()
+            for hyper_para in hyper_para_list:
 
-        test_graph = test_graph.toarray()
+                clustering_model = SpectralClustering( n_clusters = hyper_para, affinity='precomputed_nearest_neighbors', assign_labels = 'discretize')
 
-        '''
-        hyper_para_list = np.arange(2, 31, step = 1)
+                train_pred = clustering_model.fit_predict(graph)
 
-        for hyper_para in hyper_para_list:
+                print("Accuracy: ", accuracy_score(train_pred, train_labels))
 
-            clustering_model = SpectralClustering( n_clusters = hyper_para, affinity='precomputed_nearest_neighbors', assign_labels = 'discretize')
+                test_pred = clustering_model.fit_predict(test_graph)
 
-            train_pred = clustering_model.fit_predict(graph)
+                print("Accuracy: ", accuracy_score(test_pred, test_labels))
+            '''
 
-            print("Accuracy: ", accuracy_score(train_pred, train_labels))
+            print("Knn Clustering")
 
-            test_pred = clustering_model.fit_predict(test_graph)
+            hyper_para_list = [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 50, 100]
 
-            print("Accuracy: ", accuracy_score(test_pred, test_labels))
-        '''
+            for hyper_para in hyper_para_list:
 
-        estimate_node_labels(train_data, train_labels, test_data, test_labels)
+                clustering_model = KMeans(n_clusters=hyper_para).fit(graph)
 
-        train_data = graph
+                train_pred = clustering_model.predict(graph)
 
-        test_data = test_graph
+                print("K-means Train Accuracy: ", accuracy_score(train_pred, train_labels))
 
-        estimate_node_labels(train_data, train_labels, test_data, test_labels)
+                clustering_model = KMeans(n_clusters=hyper_para).fit(test_graph)
 
-        hyper_para_list = [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 50, 100]
+                test_pred = clustering_model.predict(test_graph)
 
-        for hyper_para in hyper_para_list:
-
-            clustering_model = KMeans(n_clusters=hyper_para).fit(train_data)
-
-            train_pred = clustering_model.predict(train_data)
-
-            print("K-means Train Accuracy: ", accuracy_score(train_pred, train_labels))
-
-            test_pred = clustering_model.predict(test_data)
-
-            print("K-means Test Accuracy: ", accuracy_score(test_pred, test_labels))
+                print("K-means Test Accuracy: ", accuracy_score(test_pred, test_labels))
         
-        '''
-        hyper_para_list = [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20]
+            '''
+            hyper_para_list = [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20]
 
-        for hyper_para in hyper_para_list:
+            for hyper_para in hyper_para_list:
 
-            clustering_model = AgglomerativeClustering(n_clusters= hyper_para, linkage= 'ward').fit(train_data)
+                clustering_model = AgglomerativeClustering(n_clusters= hyper_para, linkage= 'ward').fit(train_data)
 
-            train_pred = clustering_model.predict(train_data)
+                train_pred = clustering_model.predict(train_data)
 
-            print("Accuracy: ", accuracy_score(train_pred, train_labels))
+                print("Accuracy: ", accuracy_score(train_pred, train_labels))
 
-            #test_pred = clustering_model.predict(test_graph)
+                #test_pred = clustering_model.predict(test_graph)
 
-            #print("Accuracy: ", accuracy_score(test_pred, test_labels))
-        '''
+                #print("Accuracy: ", accuracy_score(test_pred, test_labels))
+            '''
 
-        hyper_para_list = np.arange(5,150 , step = 5)
+            print("DBSCAN Clustering")
 
-        for hyper_para in hyper_para_list:
+            hyper_para_list = np.arange(5,150 , step = 5)
 
-            clustering_model = DBSCAN(eps=hyper_para/100, min_samples=2)
+            for hyper_para in hyper_para_list:
 
-            train_pred = clustering_model.fit_predict(train_data)   
+                clustering_model = DBSCAN(eps=hyper_para/100, min_samples=2)
 
-            print("DBSCAN Train Accuracy: ", accuracy_score(train_pred, train_labels))
+                train_pred = clustering_model.fit_predict(train_data)   
 
-            test_pred = clustering_model.fit_predict(test_data)
+                print("DBSCAN Train Accuracy: ", accuracy_score(train_pred, train_labels))
 
-            print("DBSCAN Test Accuracy: ", accuracy_score(test_pred, test_labels))
+                test_pred = clustering_model.fit_predict(test_data)
+
+                print("DBSCAN Test Accuracy: ", accuracy_score(test_pred, test_labels))
 
 
 
