@@ -26,7 +26,7 @@ def objective_computation(train_data, train_data_graph, gamma, section):
             wij = similarity_function(train_data, gamma, idx, vertex)
             dii += wij
             temp_sum = wij * np.asarray(train_data.loc[[vertex]])
-        if dii > 0:
+        if dii > 0 and not isclose(dii, 0, abs_tol=1e-9):
             temp_sum /= dii
         else:
             temp_sum = np.zeros(len(gamma))

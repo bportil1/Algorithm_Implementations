@@ -18,7 +18,7 @@ class clustering():
         self.test_data = test_data
         self.test_labels = test_labels
         self.data_path = data_path
-        self.clustering_methods = ['Kmeans', 'Agglomerative', 'DBSCAN']
+        self.clustering_methods = ['Kmeans', 'spectral', 'Agglomerative', 'DBSCAN']
 
     def get_clustering_hyperparams(self, cluster_alg):
 
@@ -63,7 +63,8 @@ class clustering():
             
                 elif cluster_alg == 'spectral':
 
-                    clustering_model = SpectralClustering( n_clusters = hyper_para, assign_labels = 'discretize').fit(self.train_data)
+                    clustering_model = SpectralClustering( n_clusters = hyper_para, affinity='precomputed_nearest_neighbors', assign_labels = 'discretize').fit(self.train_data)
+
 
                 elif cluster_alg == 'Aggloromative':
 
@@ -73,13 +74,14 @@ class clustering():
 
                     clustering_model = DBSCAN(eps=hyper_para/100, min_samples=2).fit(self.train_data)
 
+
                 if cluster_alg == 'Kmeans':
 
                     test_pred = clustering_model.predict(self.test_data)
 
                 else:
 
-                    test_pred = clustering_model.fit_predict(self.test_data)
+                    test_pred = clustering_model.fit_predict(self.train_data)
 
                 eval, cntg = self.cluster_evaluation(test_pred, self.test_labels)
 

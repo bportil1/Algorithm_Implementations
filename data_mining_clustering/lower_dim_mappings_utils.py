@@ -70,13 +70,13 @@ def visualization_tester(X, y):
             RandomTreesEmbedding(n_estimators=200, max_depth=5, random_state=0, n_jobs=-1),
             TruncatedSVD(n_components=3),
         ),
-        #"t-SNE embedding": TSNE(
-        #    n_components=3,
-        #    max_iter=500,
-        #    n_iter_without_progress=150,
-        #    n_jobs=-1,
-        #    random_state=0,
-        #),
+        "t-SNE embedding": TSNE(
+            n_components=3,
+            max_iter=500,
+            n_iter_without_progress=150,
+            n_jobs=-1,
+            random_state=0,
+        ),
     }
 
     projections, timing = {}, {}
@@ -89,4 +89,6 @@ def visualization_tester(X, y):
     for name in timing:
         title = f"{name} (time {timing[name]:.3f}s)"
         plot_ids_embedding(projections[name], y, title)
-    return
+    retu
+
+    rn projections

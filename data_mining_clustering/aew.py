@@ -23,7 +23,7 @@ np.set_printoptions(threshold=sys.maxsize)
 
 def generate_graph(train_data):
     print("Generating Graph")
-    train_data_graph = kneighbors_graph(train_data , n_neighbors=20, mode='connectivity', metric='minkowski', p=1, include_self=False, n_jobs=-1)
+    train_data_graph = kneighbors_graph(train_data , n_neighbors=100, mode='distance', metric='euclidean', p=2, include_self=False, n_jobs=-1)
 
     return train_data_graph
 
@@ -54,6 +54,10 @@ def edge_weight_computation(train_data, train_data_graph , gamma, section):
             
     return res
 
+def min_max_scaling(matrix):
+    min_val = np.min(matrix)
+    max_val = np.max(matrix)
+    return ((matrix - min_val) / (max_val - min_val)) + 1
 
 def generate_edge_weights(train_data, train_data_graph, gamma):
     print("Generating Edge Weights")
@@ -71,51 +75,257 @@ def generate_edge_weights(train_data, train_data_graph, gamma):
         for weight in section:
             similarity_matrix[weight[0]][weight[1]] = weight[2]
 
+
+    #norm  = np.linalg.norm(similarity_matrix)
+
     print("Edge Weight Generation Complete")
+    #return similarity_matrix/norm
+    #return min_max_scaling(similarity_matrix)
     return similarity_matrix
 
-def estimate_node_labels(adjacency_matrix, true_labels):
+def estimate_node_labels(train_data, train_labels, test_data, test_labels):
 
     label_prop_model = LabelPropagation(n_jobs=-1)
 
-    label_prop_model.fit(adjacency_matrix, true_labels)
+    label_prop_model.fit(train_data, train_labels)
 
-    #data_predict = label_prop_model.score(adjacency_matrix, true_labels)
+    data_predict = label_prop_model.score(test_data, test_labels)
 
-    data_predict = label_prop_model.predict(adjacency_matrix)
+    #data_predict = label_prop_model.predict(adjacency_matrix)
 
-    #print("Label Accuracy: ", data_predict)
+    print("LabelProp Accuracy: ", data_predict)
 
     return data_predict
+
+def rewrite_edges(graph, weights):
+    
+    rows, cols = graph.nonzero()
+
+    for idx in range(len(rows)):
+        row = rows[idx]
+        col = cols[idx]
+        graph[row, col] = weights[row, col]
+
+    return graph
+
 
 if __name__ == '__main__':
     train_data, train_labels, test_data, test_labels = preprocess_ids_data()
 
-    #visualization_tester(train_data, train_labels)
-
-    data_path = './orig_data/'
+    #data_path = './orig_data/'
 
     print('#####Initial Data#####')
 
-    clustering1 = clustering(train_data, train_labels, test_data, test_labels, data_path)
+    #clustering1 = clustering(train_data, train_labels, test_data, test_labels, data_path)
 
-    clustering1.clustering_training()
+    #clustering1.clustering_training()
 
+    #print(train_data.iloc[0])
+
+    #print(train_labels.iloc[0])
+    '''
     graph = generate_graph(train_data)
+    #print(graph)
 
     train_adj_matr, gamma = generate_optimal_edge_weights(train_data, graph, 1)
     
+    graph = rewrite_edges(graph, train_adj_matr)
+    #print(graph)
+
+    #train_vectors = inferN2V(graph)
+
     test_graph = generate_graph(test_data)
 
     test_adj_matr = generate_edge_weights(test_data, test_graph, gamma)
 
-    predicted_labels = estimate_node_labels(train_adj_matr, train_labels)
+    test_graph = rewrite_edges(test_graph, test_adj_matr)
+    '''
+    #test_vectors = inferN2V(test_graph)
+    
+    #train_vectors, test_vectors = inferN2V(graph, test_graph)
+
+    #print(train_labels)
+    
+    '''
+    train_vectors = loadN2V('train')
+
+    train_labels['index'] = train_labels['index'].astype(int)
+
+    train_vectors['index'] = train_vectors['index'].astype(int)
+
+    train_vectors = train_vectors.merge(train_labels[['index', 'class']], how='left', on='index')
+
+    train_labels = train_vectors['class']
+
+    train_labels = train_labels.values.tolist()
+
+    #train_labels = flatten_list(train_labels)
+
+    train_vectors = train_vectors.loc[:, train_vectors.columns != 'class']
+
+    test_vectors = loadN2V('test')
+
+    test_labels['index'] = test_labels['index'].astype(int)
+    
+    test_vectors['index'] = test_vectors['index'].astype(int)
+
+    test_vectors = test_vectors.merge(test_labels[['index', 'class']], how='left', on='index')
+
+    test_labels = test_vectors['class']
+
+    test_labels = test_labels.values.tolist()
+
+    #test_labels = flatten_list(test_labels)
+
+    #print(test_vectors)
+
+    test_vectors = test_vectors.loc[:, test_vectors.columns != 'class']
+
+    #print(train_vectors)
+
+    #print(train_labels)
+
+    #print(test_vectors)
+
+    #print(test_labels)
+
+    train_vectors.columns = train_vectors.columns.astype(str)
+
+    test_vectors.columns = test_vectors.columns.astype(str)
+
+    #predicted_labels = estimate_node_labels(train_adj_matr, train_labels)
 
     print('#####AEW Data#####')
 
+    estimate_node_labels(train_vectors.loc[:, train_vectors.columns != 'index'], train_labels, test_vectors.loc[:, test_vectors.columns != 'index'], test_labels) 
+
     #visualization_tester(train_adj_matr, predicted_labels)
-
     data_path = './after_aew/'
+    '''
+    #clustering2 = clustering(train_vectors.loc[:, train_vectors.columns != 'index'], train_labels, test_vectors.loc[:, test_vectors.columns != 'index'], test_labels, data_path)
 
-    clustering2 = clustering(train_adj_matr, train_labels, test_adj_matr, test_labels, data_path)
-    clustering2.clustering_training()
+    #clustering2.clustering_training()
+    
+    train_labels =  train_labels['class']
+
+    test_labels = test_labels['class']
+   
+    train_3d = visualization_tester(train_data, train_labels)
+
+    test_3d = visualization_tester(test_data, test_labels)
+
+    estimate_node_labels(train_data, train_labels, test_data, test_labels)
+
+    #projections = visualization_tester(graph, train_labels)
+
+    #test_proj = visualization_tester(test_graph, test_labels)
+
+    #print(projections.keys())
+
+    #for projection in projections.keys():
+    for projection in train_3d.keys():
+
+        print(projection)
+
+        train_data = train_3d[projection]
+
+        test_data = test_3d[projection]
+
+        graph = generate_graph(train_data)
+
+        print(test_data)
+
+
+        train_data = pd.DataFrame(data=train_data[0:,0:],
+                                  columns=['0', '1', '2'])
+
+        test_data = pd.DataFrame(data=test_data[0:,0:],
+                                  columns=['0', '1', '2'])
+
+        print(test_data)
+
+
+        train_adj_matr, gamma = generate_optimal_edge_weights(train_data, graph, 1)
+
+        graph = rewrite_edges(graph, train_adj_matr)
+
+        test_graph = generate_graph(test_data)
+
+        test_adj_matr = generate_edge_weights(test_data, test_graph, gamma)
+
+        test_graph = rewrite_edges(test_graph, test_adj_matr)
+
+        graph = graph.toarray()
+
+        test_graph = test_graph.toarray()
+
+        '''
+        hyper_para_list = np.arange(2, 31, step = 1)
+
+        for hyper_para in hyper_para_list:
+
+            clustering_model = SpectralClustering( n_clusters = hyper_para, affinity='precomputed_nearest_neighbors', assign_labels = 'discretize')
+
+            train_pred = clustering_model.fit_predict(graph)
+
+            print("Accuracy: ", accuracy_score(train_pred, train_labels))
+
+            test_pred = clustering_model.fit_predict(test_graph)
+
+            print("Accuracy: ", accuracy_score(test_pred, test_labels))
+        '''
+
+        estimate_node_labels(train_data, train_labels, test_data, test_labels)
+
+        train_data = graph
+
+        test_data = test_graph
+
+        estimate_node_labels(train_data, train_labels, test_data, test_labels)
+
+        hyper_para_list = [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 50, 100]
+
+        for hyper_para in hyper_para_list:
+
+            clustering_model = KMeans(n_clusters=hyper_para).fit(train_data)
+
+            train_pred = clustering_model.predict(train_data)
+
+            print("K-means Train Accuracy: ", accuracy_score(train_pred, train_labels))
+
+            test_pred = clustering_model.predict(test_data)
+
+            print("K-means Test Accuracy: ", accuracy_score(test_pred, test_labels))
+        
+        '''
+        hyper_para_list = [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20]
+
+        for hyper_para in hyper_para_list:
+
+            clustering_model = AgglomerativeClustering(n_clusters= hyper_para, linkage= 'ward').fit(train_data)
+
+            train_pred = clustering_model.predict(train_data)
+
+            print("Accuracy: ", accuracy_score(train_pred, train_labels))
+
+            #test_pred = clustering_model.predict(test_graph)
+
+            #print("Accuracy: ", accuracy_score(test_pred, test_labels))
+        '''
+
+        hyper_para_list = np.arange(5,150 , step = 5)
+
+        for hyper_para in hyper_para_list:
+
+            clustering_model = DBSCAN(eps=hyper_para/100, min_samples=2)
+
+            train_pred = clustering_model.fit_predict(train_data)   
+
+            print("DBSCAN Train Accuracy: ", accuracy_score(train_pred, train_labels))
+
+            test_pred = clustering_model.fit_predict(test_data)
+
+            print("DBSCAN Test Accuracy: ", accuracy_score(test_pred, test_labels))
+
+
+
