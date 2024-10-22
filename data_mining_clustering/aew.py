@@ -21,6 +21,8 @@ from sklearn import datasets
 
 from sklearn.decomposition import PCA
 
+from sklearn.preprocessing import MinMaxScaler
+
 np.set_printoptions(threshold=sys.maxsize)
 
 def generate_graph(train_data, train_labels):
@@ -28,11 +30,13 @@ def generate_graph(train_data, train_labels):
 
     #train_data = pca_centered(train_data.to_numpy(), .9)
     
-    pca = PCA(n_components=3)
+    pca = PCA(n_components=2)
 
     train_data = pca.fit_transform(train_data)
     
-    visualization_tester(train_data, train_labels, 3, 'display')
+    train_data = MinMaxScaler().fit_transform(train_data)
+
+    #visualization_tester(train_data, train_labels, 3, 'display')
 
     print(pca.fit(train_data).explained_variance_ratio_)
 
@@ -40,7 +44,7 @@ def generate_graph(train_data, train_labels):
     #print(len(train_data[0]))
 
     #train_data = visualization_tester(train_data, train_labels, 3, 'no')
-    train_data_graph = kneighbors_graph(train_data, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=True, n_jobs=-1)
+    train_data_graph = kneighbors_graph(train_data, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
 
     visualization_tester(train_data_graph, train_labels, 3, 'display')
 
@@ -211,7 +215,6 @@ if __name__ == '__main__':
 
     #estimate_node_labels(graph, train_labels, test_graph, test_labels)
 
-
     graph = graph.toarray()
 
     #print(len(graph))
@@ -254,11 +257,11 @@ if __name__ == '__main__':
 
             #visualization_tester(test_data, test_labels, 3, 'display')
         
-            G = nx.from_numpy_array(graph)
+            #G = nx.from_numpy_array(graph)
     
-            components = list(nx.connected_components(G))
+            #components = list(nx.connected_components(G))
 
-            print(len(components))
+            #print(len(components))
             '''
             for component in components:
 
@@ -324,7 +327,7 @@ if __name__ == '__main__':
                     #print("Accuracy: ", accuracy_score(test_pred, test_labels))
 
             '''
-
+            
             print("Knn Clustering")
 
             hyper_para_list = [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 50, 100]
@@ -339,32 +342,31 @@ if __name__ == '__main__':
 
                 clustering_model = KMeans(n_clusters=hyper_para).fit(test_graph)
 
-                test_pred = clustering_model.predict(test_graph)
+                test_pred = clustering_model.predict(test_data)
 
                 print("K-means Test Accuracy: ", accuracy_score(test_pred, test_labels))
-    
-            '''
+            
+            print("Agglomerative clustering")
+            
             hyper_para_list = [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20]
 
             for hyper_para in hyper_para_list:
 
-                clustering_model = AgglomerativeClustering(n_clusters= hyper_para, linkage= 'ward').fit(train_data)
+                clustering_model = AgglomerativeClustering(n_clusters= hyper_para, linkage= 'ward')
 
-                train_pred = clustering_model.predict(train_data)
+                train_pred = clustering_model.fit_predict(train_data)
 
-                print("Accuracy: ", accuracy_score(train_pred, train_labels))
+                print("Train Accuracy: ", accuracy_score(train_pred, train_labels))
 
-                #test_pred = clustering_model.predict(test_graph)
+                test_pred = clustering_model.fit_predict(test_data)
 
-                #print("Accuracy: ", accuracy_score(test_pred, test_labels))
-            '''
-
+                print("Accuracy: ", accuracy_score(test_pred, test_labels))
+            
             print("DBSCAN Clustering")
 
             hyper_para_list = np.arange(5,150 , step = 5)
 
             m_samp = np.arange(5,150 , step = 5)
-
 
             for hyper_para in hyper_para_list:
 
@@ -378,5 +380,5 @@ if __name__ == '__main__':
                 test_pred = clustering_model.fit_predict(test_data)
 
                 print("DBSCAN Test Accuracy: ", accuracy_score(test_pred, test_labels))
-
+            
     

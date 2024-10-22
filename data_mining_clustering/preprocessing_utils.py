@@ -24,9 +24,9 @@ def flatten_list(nested_list):
     return  reduce(lambda x,y: x+y, nested_list)
 
 def preprocess_ids_data():
-    #ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
+    ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
 
-    ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
+    #ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
 
     #ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Test_data.csv'
 
@@ -270,6 +270,25 @@ def pca_centered(matrix, alpha):
 
         return np.real(np.dot(reduced_basis, matrix2))
 
-    
+   
+def uniprop_weight_update(neighborhood, weight):
+    return 0
+
+
+def uniprop(data, k, num_iterations, graph):
+    for idx in range(1, num_iterations):
+        #for row in range(len(graph)):
+        points = slice(graph.indptr[idx], graph.indptr[idx+1])
+        point1 = np.asarray(data.loc[[idx]])
+        for vertex in graph.indices[points]:
+            point2 = np.asarray(data.loc[[vertex]])
+            neigh_of_vertex = slice(graph.indptr[vertex], graph.indptr[vertex+1])
+            for neighbor in graph.indices[neigh_of_vertex]:
+                uniprop_weight_update(slice(graph.indptr[vertex], graph.indptr[vertex+1]), graph.data[neighbor])
+    return 0
+
+
+
+
 
 
