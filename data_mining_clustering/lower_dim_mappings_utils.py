@@ -22,6 +22,9 @@ from sklearn.manifold import (
     LocallyLinearEmbedding,
     SpectralEmbedding,
 )
+
+from sklearn.decomposition import PCA
+
 from sklearn.neighbors import NeighborhoodComponentsAnalysis
 from sklearn.pipeline import make_pipeline
 from sklearn.random_projection import SparseRandomProjection
@@ -81,6 +84,8 @@ def visualization_tester(X, y, num_components, display = 'no'):
         #    n_jobs=-1,
         #    random_state=0,
         #),
+        "PCA": PCA(n_components=3),
+
     }
 
     projections, timing = {}, {}

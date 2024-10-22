@@ -19,18 +19,31 @@ import numpy as np
 
 from sklearn import datasets
 
+from sklearn.decomposition import PCA
+
 np.set_printoptions(threshold=sys.maxsize)
 
-def generate_graph(train_data):
+def generate_graph(train_data, train_labels):
     print("Generating Graph")
 
-    train_data = pca_centered(train_data.to_numpy(), .9)
+    #train_data = pca_centered(train_data.to_numpy(), .9)
     
-    print(len(train_data))
-    print(len(train_data[0]))
+    pca = PCA(n_components=3)
+
+    train_data = pca.fit_transform(train_data)
+    
+    visualization_tester(train_data, train_labels, 3, 'display')
+
+    print(pca.fit(train_data).explained_variance_ratio_)
+
+    #print(len(train_data))
+    #print(len(train_data[0]))
 
     #train_data = visualization_tester(train_data, train_labels, 3, 'no')
-    train_data_graph = kneighbors_graph(train_data, n_neighbors=150, mode='connectivity', metric='cosine', include_self=True, n_jobs=-1)
+    train_data_graph = kneighbors_graph(train_data, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=True, n_jobs=-1)
+
+    visualization_tester(train_data_graph, train_labels, 3, 'display')
+
 
     return train_data_graph
 
@@ -166,48 +179,7 @@ if __name__ == '__main__':
 
     train_labels = train_labels.values.tolist()
 
-    #train_labels = flatten_list(train_labels)
-
-    train_vectors = train_vectors.loc[:, train_vectors.columns != 'class']
-
-    test_vectors = loadN2V('test')
-
-    test_labels['index'] = test_labels['index'].astype(int)
-    
-    test_vectors['index'] = test_vectors['index'].astype(int)
-
-    test_vectors = test_vectors.merge(test_labels[['index', 'class']], how='left', on='index')
-
-    test_labels = test_vectors['class']
-
-    test_labels = test_labels.values.tolist()
-
-    #test_labels = flatten_list(test_labels)
-
-    #print(test_vectors)
-
-    test_vectors = test_vectors.loc[:, test_vectors.columns != 'class']
-
-    #print(train_vectors)
-
-    #print(train_labels)
-
-    #print(test_vectors)
-
-    #print(test_labels)
-
-    train_vectors.columns = train_vectors.columns.astype(str)
-
-    test_vectors.columns = test_vectors.columns.astype(str)
-
-    #predicted_labels = estimate_node_labels(train_adj_matr, train_labels)
-
-    print('#####AEW Data#####')
-
-    estimate_node_labels(train_vectors.loc[:, train_vectors.columns != 'index'], train_labels, test_vectors.loc[:, test_vectors.columns != 'index'], test_labels) 
-
-    #visualization_tester(train_adj_matr, predicted_labels)
-    data_path = './after_aew/'
+    #train_labels = flat
     '''
     #clustering2 = clustering(train_vectors.loc[:, train_vectors.columns != 'index'], train_labels, test_vectors.loc[:, test_vectors.columns != 'index'], test_labels, data_path)
 
@@ -219,23 +191,26 @@ if __name__ == '__main__':
    
     ######Usually display here
 
-    visualization_tester(train_data, train_labels, 3, 'no')
+    visualization_tester(train_data, train_labels, 3, 'display')
 
     visualization_tester(test_data, test_labels, 3, 'no')
 
     estimate_node_labels(train_data, train_labels, test_data, test_labels)
 
-    graph = generate_graph(train_data)
+    graph = generate_graph(train_data, train_labels)
 
     train_adj_matr, gamma = generate_optimal_edge_weights(train_data, graph, 5)
 
     graph = rewrite_edges(graph, train_adj_matr)
 
-    test_graph = generate_graph(test_data)
+    test_graph = generate_graph(test_data, test_labels)
 
     test_adj_matr = generate_edge_weights(test_data, test_graph, gamma)
 
     test_graph = rewrite_edges(test_graph, test_adj_matr)
+
+    #estimate_node_labels(graph, train_labels, test_graph, test_labels)
+
 
     graph = graph.toarray()
 
@@ -247,9 +222,9 @@ if __name__ == '__main__':
 
     #print(test_graph[:5])
 
-    #num_components = [3, 6, 8, 10, 12, 14, 16, 18, 20, 25, 30, 35, 40, 75, 100]
+    num_components = [3, 6, 8, 10, 12, 14, 16, 18, 20, 25, 30, 35, 40, 75, 100]
 
-    num_components = [18, 20, 25, 30, 35, 40, 75, 100]
+    #num_components = [18, 20, 25, 30, 35, 40, 75, 100]
 
     graph = np.asarray(graph)
 
@@ -268,6 +243,8 @@ if __name__ == '__main__':
             train_data = projections[projection]
 
             test_data = test_proj[projection]
+
+            estimate_node_labels(train_data, train_labels, test_data, test_labels)
 
             ### usually displaay here
 
