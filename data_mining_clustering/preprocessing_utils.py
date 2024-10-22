@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from functools import reduce
@@ -23,9 +24,9 @@ def flatten_list(nested_list):
     return  reduce(lambda x,y: x+y, nested_list)
 
 def preprocess_ids_data():
-    ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
+    #ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
 
-    #ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
+    ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
 
     #ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Test_data.csv'
 
@@ -71,7 +72,7 @@ def preprocess_ids_data():
 
     #test_labels = flatten_list(test_labels)
 
-    return train_data, train_labels, test_data, test_labels
+    return train_data.head(500), train_labels.head(500), test_data, test_labels
 
 def trainG2V(train_graphs, train_labels, train_names, param):
 
@@ -205,7 +206,67 @@ def loadN2V(ds_type):
 
     return pd.DataFrame(vectors, columns=cols)
 
+def pca_centered(matrix, alpha):
+        print("Computing PCA")
+        matrix_t = matrix.T
+        for idx in range(len(matrix_t)):
+            mean = np.mean(matrix_t[idx])
+            matrix_t[idx] = matrix_t[idx] - mean
+    
+        matrix2 =  matrix_t.T
+       
+        print(len(matrix2))
+        print(len(matrix2[0]))
 
+        cov_matrix_mean_centered =  np.cov(matrix2)
+
+        matrix_eigenvalues, matrix_eigenvectors = np.linalg.eig(cov_matrix_mean_centered)
+
+        print(type(matrix_eigenvectors))
+
+        matrix_eig_data = {}
+
+        for idx in range(len(matrix_eigenvalues)):
+            matrix_eig_data[matrix_eigenvalues[idx]] = matrix_eigenvectors[:,idx]
+
+        matrix_eig_data = dict(sorted(matrix_eig_data.items(), reverse=True))
+
+        matrix_eigenvalues = list(matrix_eig_data.keys())
+
+        matrix_eigenvectors = np.asarray(list(matrix_eig_data.values()))
+
+        print(matrix_eigenvectors.shape)
+
+        #print(len(matrix_eigenvectors[0]))
+
+        total_var = 0
+        dimension_count = 0
+        reduced_basis = []
+        for eigenval in matrix_eigenvalues:
+            total_var += eigenval
+            print(matrix_eigenvectors[:,dimension_count])
+            reduced_basis.append(matrix_eigenvectors[:,dimension_count])
+            dimension_count += 1
+            print(eigenval)
+            print(total_var/sum(matrix_eigenvalues))
+            if total_var/sum(matrix_eigenvalues) >= alpha:
+                break
+                #frac_var = total_var/sum(matrix_eigenvalues)
+                #dimension_count += 1
+            #else:
+                #break
+
+        #print(matrix_eigenvectors)
+
+        #reduced_basis = np.asarray(np.asarray(matrix_eigenvectors).T[:dimension_count]) 
+
+        print(len(reduced_basis))
+
+        print(len(reduced_basis[0]))
+
+        print("Reduced Representation Dimension Count: ", dimension_count)
+
+        return np.real(np.dot(reduced_basis, matrix2))
 
     
 

@@ -23,7 +23,14 @@ np.set_printoptions(threshold=sys.maxsize)
 
 def generate_graph(train_data):
     print("Generating Graph")
-    train_data_graph = kneighbors_graph(train_data , n_neighbors=100, mode='distance', metric='euclidean', p=2, include_self=False, n_jobs=-1)
+
+    train_data = pca_centered(train_data.to_numpy(), .9)
+    
+    print(len(train_data))
+    print(len(train_data[0]))
+
+    #train_data = visualization_tester(train_data, train_labels, 3, 'no')
+    train_data_graph = kneighbors_graph(train_data, n_neighbors=150, mode='connectivity', metric='cosine', include_self=True, n_jobs=-1)
 
     return train_data_graph
 
@@ -75,12 +82,14 @@ def generate_edge_weights(train_data, train_data_graph, gamma):
         for weight in section:
             similarity_matrix[weight[0]][weight[1]] = weight[2]
 
+    print(similarity_matrix[0][:5])
 
-    #norm  = np.linalg.norm(similarity_matrix)
+    similarity_matrix = laplacian_normalization(similarity_matrix)
+
+    print(similarity_matrix[0][:5])
 
     print("Edge Weight Generation Complete")
-    #return similarity_matrix/norm
-    #return min_max_scaling(similarity_matrix)
+    
     return similarity_matrix
 
 def estimate_node_labels(train_data, train_labels, test_data, test_labels):
@@ -90,8 +99,6 @@ def estimate_node_labels(train_data, train_labels, test_data, test_labels):
     label_prop_model.fit(train_data, train_labels)
 
     data_predict = label_prop_model.score(test_data, test_labels)
-
-    #data_predict = label_prop_model.predict(adjacency_matrix)
 
     print("LabelProp Accuracy: ", data_predict)
 
@@ -210,15 +217,17 @@ if __name__ == '__main__':
 
     test_labels = test_labels['class']
    
-    #train_3d = visualization_tester(train_data, train_labels)
+    ######Usually display here
 
-    #test_3d = visualization_tester(test_data, test_labels)
+    visualization_tester(train_data, train_labels, 3, 'no')
+
+    visualization_tester(test_data, test_labels, 3, 'no')
 
     estimate_node_labels(train_data, train_labels, test_data, test_labels)
 
     graph = generate_graph(train_data)
 
-    train_adj_matr, gamma = generate_optimal_edge_weights(train_data, graph, 0)
+    train_adj_matr, gamma = generate_optimal_edge_weights(train_data, graph, 5)
 
     graph = rewrite_edges(graph, train_adj_matr)
 
@@ -230,9 +239,19 @@ if __name__ == '__main__':
 
     graph = graph.toarray()
 
+    #print(len(graph))
+
+    #print(len(graph[0]))
+
     test_graph = test_graph.toarray()
 
-    num_components = [3, 6, 8, 10, 12, 14, 16, 18, 20, 25, 30, 35, 40, 75, 100]
+    #print(test_graph[:5])
+
+    #num_components = [3, 6, 8, 10, 12, 14, 16, 18, 20, 25, 30, 35, 40, 75, 100]
+
+    num_components = [18, 20, 25, 30, 35, 40, 75, 100]
+
+    graph = np.asarray(graph)
 
     for num_com in num_components:
 
@@ -250,24 +269,83 @@ if __name__ == '__main__':
 
             test_data = test_proj[projection]
 
-            visualization_tester(train_data, train_labels, 3, 'display')
+            ### usually displaay here
 
-            visualization_tester(test_data, test_labels, 3, 'display')
+            visualization_tester(train_data, train_labels, 3, 'no')
 
+            #twod_data = visualization_tester(train_data, train_labels, 2, 'no')
+
+            #visualization_tester(test_data, test_labels, 3, 'display')
+        
+            G = nx.from_numpy_array(graph)
+    
+            components = list(nx.connected_components(G))
+
+            print(len(components))
             '''
-            hyper_para_list = np.arange(2, 31, step = 1)
+            for component in components:
 
-            for hyper_para in hyper_para_list:
+                subgraph = G.subgraph(component)
+                subgraph_adj = nx.to_numpy_array(subgraph)
 
-                clustering_model = SpectralClustering( n_clusters = hyper_para, affinity='precomputed_nearest_neighbors', assign_labels = 'discretize')
+                hyper_para_list = np.arange(2, 31, step = 1)
 
-                train_pred = clustering_model.fit_predict(graph)
+                if len(subgraph_adj) < 2:
+                    continue
 
-                print("Accuracy: ", accuracy_score(train_pred, train_labels))
 
-                test_pred = clustering_model.fit_predict(test_graph)
+                for hyper_para in hyper_para_list:
 
-                print("Accuracy: ", accuracy_score(test_pred, test_labels))
+                    clustering_model = SpectralClustering( n_clusters = hyper_para, assign_labels = 'discretize').fit(subgraph_adj)
+
+                    train_pred = clustering_model.fit_predict(subgraph_adj)
+
+                    cluster_Labels = clustering_model.labels_
+
+                    core_samples_mask = np.zeros_like(cluster_Labels, dtype=bool)
+                    # core_samples_mask[clustering.core_sample_indices_] = True
+
+                    # Number of clusters in labels, ignoring noise if present.
+                    n_clusters_ = len(set(cluster_Labels)) - (1 if -1 in cluster_Labels else 0)
+                    n_noise_ = list(cluster_Labels).count(-1)
+                    # Plot result
+
+                    # Black removed and is used for noise instead.
+                    unique_labels = set(cluster_Labels)
+                    colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
+                    for k, col in zip(unique_labels, colors):
+                        if k == -1:
+                            # Black used for noise.
+                            col = [0, 0, 0, 1]
+
+                        class_member_mask = cluster_Labels == k
+
+                        xy = twod_data[projection][class_member_mask]
+                        plt.plot(
+                        xy[:, 0],
+                        xy[:, 1],
+                        "o",
+                        markerfacecolor=tuple(col),
+                        markeredgecolor="k",
+                        markersize=5,
+                        )
+                        #fig = plt.gcf()
+                        plt.show()
+
+                
+
+
+                    #print(len(train_pred))
+
+                    #quart = (len(train_pred//4))
+                    #print(train_pred[:quart])
+
+                    #print("Accuracy: ", accuracy_score(train_pred, train_labels))
+
+                    #test_pred = clustering_model.fit_predict(test_data)
+
+                    #print("Accuracy: ", accuracy_score(test_pred, test_labels))
+
             '''
 
             print("Knn Clustering")
@@ -287,7 +365,7 @@ if __name__ == '__main__':
                 test_pred = clustering_model.predict(test_graph)
 
                 print("K-means Test Accuracy: ", accuracy_score(test_pred, test_labels))
-        
+    
             '''
             hyper_para_list = [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20]
 
@@ -308,9 +386,13 @@ if __name__ == '__main__':
 
             hyper_para_list = np.arange(5,150 , step = 5)
 
+            m_samp = np.arange(5,150 , step = 5)
+
+
             for hyper_para in hyper_para_list:
 
-                clustering_model = DBSCAN(eps=hyper_para/100, min_samples=2)
+                #for m in m_samp:
+                clustering_model = DBSCAN(eps=hyper_para/100, min_samples=50, n_jobs = -1)
 
                 train_pred = clustering_model.fit_predict(train_data)   
 
@@ -320,5 +402,4 @@ if __name__ == '__main__':
 
                 print("DBSCAN Test Accuracy: ", accuracy_score(test_pred, test_labels))
 
-
-
+    

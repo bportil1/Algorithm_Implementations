@@ -3,6 +3,19 @@ from multiprocessing import Pool
 from multiprocessing import cpu_count
 from math import isclose
 
+def laplacian_normalization(similarity_matrix):
+    print("Normalizing Edge Weights")
+    for x in range(len(similarity_matrix)):
+        for y in range(len(similarity_matrix[0])):
+            x_sum = np.sum(similarity_matrix[x])
+            y_sum = np.sum(similarity_matrix[y])
+            if (x_sum > 0 and y_sum > 0) and (not isclose(x_sum, 0, abs_tol=1e-9) and not isclose(y_sum, 0, abs_tol=1e-9)):
+                similarity_matrix[x][y] = -(similarity_matrix[x][y] / np.sqrt(x_sum * y_sum))
+            else:
+                similarity_matrix[x][y] = 0
+    print("Finished Normalizing Edge Weights")
+    return similarity_matrix
+
 def similarity_function(train_data, gamma, pt1_idx, pt2_idx):
     point1 = np.asarray(train_data.loc[[pt1_idx]])
     point2 = np.asarray(train_data.loc[[pt2_idx]])
@@ -11,6 +24,8 @@ def similarity_function(train_data, gamma, pt1_idx, pt2_idx):
 
     for feature in range(len(point2[0])):
         temp_res += (point1[0][feature] - point2[0][feature]) ** 2 / (gamma[feature]) ** 2
+
+
     ##### this exponent op is rarely returing an overflow, not sure the type of value thats causing it, seems stable up to 5 iterations
     #print(temp_res)
     return np.exp(-temp_res, dtype=np.longdouble)

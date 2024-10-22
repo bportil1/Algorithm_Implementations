@@ -63,6 +63,7 @@ def plot_ids_embedding(X, labels, title):
 def visualization_tester(X, y, num_components, display = 'no'):
     n_neighbors = 20
     #standard lle dying sometimes because of a singular value matrix?, swapping eigensolver to dense upped the computation time substantially but ran on initial trial
+    
     embeddings = {
         "Truncated SVD embedding": TruncatedSVD(n_components=num_components),
         #"Standard LLE embedding": LocallyLinearEmbedding(
@@ -73,13 +74,13 @@ def visualization_tester(X, y, num_components, display = 'no'):
             RandomTreesEmbedding(n_estimators=200, max_depth=5, random_state=0, n_jobs=-1),
             TruncatedSVD(n_components=num_components),
         ),
-        "t-SNE embedding": TSNE(
-            n_components=num_components,
-            max_iter=500,
-            n_iter_without_progress=150,
-            n_jobs=-1,
-            random_state=0,
-        ),
+        #"t-SNE embedding": TSNE(
+        #    n_components=num_components,
+        #    max_iter=500,
+        #    n_iter_without_progress=150,
+        #    n_jobs=-1,
+        #    random_state=0,
+        #),
     }
 
     projections, timing = {}, {}
