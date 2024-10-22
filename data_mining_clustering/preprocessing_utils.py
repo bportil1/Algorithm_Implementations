@@ -72,9 +72,9 @@ def preprocess_ids_data():
 
     #test_labels = flatten_list(test_labels)
 
-    return train_data.head(500), train_labels.head(500), test_data, test_labels
+    #return train_data.head(500), train_labels.head(500), test_data, test_labels
 
-    #return train_data, train_labels, test_data, test_labels
+    return train_data, train_labels, test_data, test_labels
 
 def trainG2V(train_graphs, train_labels, train_names, param):
 

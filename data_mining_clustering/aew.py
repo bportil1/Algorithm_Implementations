@@ -30,26 +30,54 @@ def generate_graph(train_data, train_labels):
 
     #train_data = pca_centered(train_data.to_numpy(), .9)
     
-    pca = PCA(n_components=2)
-
-    train_data = pca.fit_transform(train_data)
-    
     train_data = MinMaxScaler().fit_transform(train_data)
 
-    #visualization_tester(train_data, train_labels, 3, 'display')
+    n_components = [ idx for idx in range(2, 20, 2)]
 
-    print(pca.fit(train_data).explained_variance_ratio_)
+    max_connectivity = 0
 
-    #print(len(train_data))
-    #print(len(train_data[0]))
+    max_conn_idx = 0
+
+    for n_cmp in n_components:
+
+        pca = PCA(n_components=n_cmp)
+
+        tmp_train_data = pca.fit_transform(train_data)
+
+        #visualization_tester(train_data, train_labels, 3, 'display')
+
+        print(pca.fit(train_data).explained_variance_ratio_)
+
+        #train_data = visualization_tester(train_data, train_labels, 3, 'no')
+        graph = kneighbors_graph(tmp_train_data, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
+
+        G = nx.from_numpy_array(graph)
+
+        components = list(nx.connected_components(G))
+
+        if len(components) < max_connectivity:
+
+            max_connectivity = len(components)
+
+            max_conn_idx = n_cmp
+
+        print(len(components))
+
+        del G
+
+    pca = PCA(n_components=n_cmp)
+
+    train_data = pca.fit_transform(train_data)
 
     #train_data = visualization_tester(train_data, train_labels, 3, 'no')
-    train_data_graph = kneighbors_graph(train_data, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
+    graph = kneighbors_graph(train_data, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
 
-    visualization_tester(train_data_graph, train_labels, 3, 'display')
+    if n_cmp > 2:
+
+        #visualization_tester(graph, train_labels, 3, 'display')
 
 
-    return train_data_graph
+    return graph
 
 def generate_optimal_edge_weights(train_data, train_data_graph, num_iterations): 
     print("Generating Optimal Edge Weights")
@@ -195,7 +223,7 @@ if __name__ == '__main__':
    
     ######Usually display here
 
-    visualization_tester(train_data, train_labels, 3, 'display')
+    visualization_tester(train_data, train_labels, 3, 'no')
 
     visualization_tester(test_data, test_labels, 3, 'no')
 
@@ -262,71 +290,20 @@ if __name__ == '__main__':
             #components = list(nx.connected_components(G))
 
             #print(len(components))
-            '''
-            for component in components:
 
-                subgraph = G.subgraph(component)
-                subgraph_adj = nx.to_numpy_array(subgraph)
+            hyper_para_list = [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 50, 100]
 
-                hyper_para_list = np.arange(2, 31, step = 1)
+            for hyper_para in hyper_para_list:
 
-                if len(subgraph_adj) < 2:
-                    continue
+                clustering_model = SpectralClustering( n_clusters = hyper_para, assign_labels = 'discretize')
 
+                train_pred = clustering_model.fit_predict(train_data)
 
-                for hyper_para in hyper_para_list:
+                print("Accuracy: ", accuracy_score(train_pred, train_labels))
 
-                    clustering_model = SpectralClustering( n_clusters = hyper_para, assign_labels = 'discretize').fit(subgraph_adj)
+                test_pred = clustering_model.fit_predict(test_data)
 
-                    train_pred = clustering_model.fit_predict(subgraph_adj)
-
-                    cluster_Labels = clustering_model.labels_
-
-                    core_samples_mask = np.zeros_like(cluster_Labels, dtype=bool)
-                    # core_samples_mask[clustering.core_sample_indices_] = True
-
-                    # Number of clusters in labels, ignoring noise if present.
-                    n_clusters_ = len(set(cluster_Labels)) - (1 if -1 in cluster_Labels else 0)
-                    n_noise_ = list(cluster_Labels).count(-1)
-                    # Plot result
-
-                    # Black removed and is used for noise instead.
-                    unique_labels = set(cluster_Labels)
-                    colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
-                    for k, col in zip(unique_labels, colors):
-                        if k == -1:
-                            # Black used for noise.
-                            col = [0, 0, 0, 1]
-
-                        class_member_mask = cluster_Labels == k
-
-                        xy = twod_data[projection][class_member_mask]
-                        plt.plot(
-                        xy[:, 0],
-                        xy[:, 1],
-                        "o",
-                        markerfacecolor=tuple(col),
-                        markeredgecolor="k",
-                        markersize=5,
-                        )
-                        #fig = plt.gcf()
-                        plt.show()
-
-                
-
-
-                    #print(len(train_pred))
-
-                    #quart = (len(train_pred//4))
-                    #print(train_pred[:quart])
-
-                    #print("Accuracy: ", accuracy_score(train_pred, train_labels))
-
-                    #test_pred = clustering_model.fit_predict(test_data)
-
-                    #print("Accuracy: ", accuracy_score(test_pred, test_labels))
-
-            '''
+                print("Accuracy: ", accuracy_score(test_pred, test_labels))
             
             print("Knn Clustering")
 
@@ -334,13 +311,13 @@ if __name__ == '__main__':
 
             for hyper_para in hyper_para_list:
 
-                clustering_model = KMeans(n_clusters=hyper_para).fit(graph)
+                clustering_model = KMeans(n_clusters=hyper_para).fit(train_data)
 
-                train_pred = clustering_model.predict(graph)
+                train_pred = clustering_model.predict(train_data)
 
                 print("K-means Train Accuracy: ", accuracy_score(train_pred, train_labels))
 
-                clustering_model = KMeans(n_clusters=hyper_para).fit(test_graph)
+                clustering_model = KMeans(n_clusters=hyper_para).fit(test_data)
 
                 test_pred = clustering_model.predict(test_data)
 
