@@ -2,17 +2,65 @@ import numpy as np
 from multiprocessing import Pool
 from multiprocessing import cpu_count
 from math import isclose
+from math import ceil
 
-def laplacian_normalization(similarity_matrix):
-    print("Normalizing Edge Weights")
-    for x in range(len(similarity_matrix)):
+def normalization_computation(similarity_matrix, section):
+    res = []
+    for x in section:
         for y in range(len(similarity_matrix[0])):
             x_sum = np.sum(similarity_matrix[x])
             y_sum = np.sum(similarity_matrix[y])
             if (x_sum > 0 and y_sum > 0) and (not isclose(x_sum, 0, abs_tol=1e-9) and not isclose(y_sum, 0, abs_tol=1e-9)):
-                similarity_matrix[x][y] = -(similarity_matrix[x][y] / np.sqrt(x_sum * y_sum))
+                res.append((x, y, -(similarity_matrix[x][y] / np.sqrt(x_sum * y_sum))))
             else:
-                similarity_matrix[x][y] = 0
+                res.append((x, y, 0))
+    return res
+
+def normalization_parallel_caller(similarity_matrix, split_data):
+    with Pool(processes=cpu_count()) as pool:
+        edge_weight_res = [pool.apply_async(normalization_computation, (similarity_matrix, section)) for section in split_data]
+
+        edge_weights = [edge_weight.get() for edge_weight in edge_weight_res]
+
+    for section in edge_weights:
+        for weight in section:
+            similarity_matrix[weight[0]][weight[1]] = weight[2]
+
+    return 0
+
+
+def laplacian_normalization(similarity_matrix):
+    print("Normalizing Edge Weights")
+
+    divisor = ceil(len(similarity_matrix[0]) / 32)
+
+    #fix repeating indices on last section split
+
+    curr_start = 0
+
+    for idx in range(1, 33):
+
+        if (divisor * idx) <= len(similarity_matrix[0]):
+            curr_end = divisor * idx
+        else:
+            curr_end = len(similarity_matrix[0])
+
+        print(idx, " ", curr_start, " ", curr_end)
+
+        split_data = split(range(curr_start, curr_end), cpu_count())
+    
+        print(split_data)
+
+        normalization_parallel_caller(similarity_matrix, split_data)
+
+        curr_start = curr_end
+
+    #split_data = split(range(midpt, len(similarity_matrix[0])), cpu_count()) 
+
+    #print(split_data[0], " ", split_data[-1])
+
+    #normalization_parallel_caller(similarity_matrix, split_data)
+
     print("Finished Normalizing Edge Weights")
     return similarity_matrix
 
@@ -28,6 +76,7 @@ def similarity_function(train_data, gamma, pt1_idx, pt2_idx):
 
     ##### this exponent op is rarely returing an overflow, not sure the type of value thats causing it, seems stable up to 5 iterations
     #print(temp_res)
+
     return np.exp(-temp_res, dtype=np.longdouble)
 
 def objective_computation(train_data, train_data_graph, gamma, section):
