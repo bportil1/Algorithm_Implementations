@@ -13,10 +13,12 @@ from node2vec import Node2Vec
 class data():
     def __init__(self, train_data = None, train_labels = None, test_data = None, test_labels = None, output_path = None):
         self.train_data = train_data
+        self.train_graph = None
         self.train_labels = train_labels
         self.test_data = test_data
+        self.test_graph = None
         self.test_labels = test_labels
-        self.output_path = output_path
+        self.output_path = "./"
 
     def scale_data(self, scaling):
         if scaling == 'standard':
@@ -32,12 +34,12 @@ class data():
         else:
             print("Scaling arg not supported")
         
-    def encode_categorical(self, set_type, column_name):
+    def encode_categorical(self, column_name):
         label_encoder = LabelEncoder()
-        label_encoder.fit(self.train_data)
+        label_encoder.fit(self.train_data[column_name])
 
-        self.train_data[data_type] = label_encoder.transform(self.train_data[data_type])
-        self.test_data[data_type] = label_encoder.transform(self.test_data[data_type])
+        self.train_data[column_name] = label_encoder.transform(self.train_data[column_name])
+        self.test_data[column_name] = label_encoder.transform(self.test_data[column_name])
 
     def load_data(self, datapath, data_type):
         if data_type == 'train':
@@ -63,12 +65,83 @@ class data():
     def split_data(self, split_size):
         self.train_data, self.train_labels, self.test_data, self.test_labels = train_test_split(self.train_data, self.train_labels, test_size = split_size)
 
+    def get_embeddings(self, num_components, embedding_subset = None):
+        embeddings = {
+            "Truncated SVD embedding": TruncatedSVD(n_components=num_components),
+            #"Standard LLE embedding": LocallyLinearEmbedding(
+            #    n_neighbors=n_neighbors, n_components=num_components, method="standard", 
+            #    eigen_solver='dense', n_jobs=-1
+            #),
+            "Random Trees embedding": make_pipeline(
+                RandomTreesEmbedding(n_estimators=200, max_depth=5, random_state=0, n_jobs=-1),
+                TruncatedSVD(n_components=num_components),
+            ),
+            #"t-SNE embedding": TSNE(
+            #        n_components=num_components,
+            #    max_iter=500,
+            #    n_iter_without_progress=150,
+            #    n_jobs=-1,
+            #    random_state=0,
+            #),
+            "PCA": PCA(n_components=3),
+        }
+        if embedding_subset == None:
+            return embeddings
+        else:
+            out_dict = {}
+            for key, value in enumerate(embeddings):
+                out_dict[key] = value
+            return out_dict
 
+    def downsize_data(self, data, num_components):
+        embeddings = get_embeddings(num_components)
+
+        projections, timing = {}, {}
+        for name, transformer in embeddings.items():
+            print(f"Computing {name}...")
+            start_time = time()
+            projections[name] = transformer.fit_transform(X, y)
+            timing[name] = time() - start_time
+
+        return projections, timing 
+
+    def generate_graphs(self, data_type):
+        return kneighbors_graph(data_type, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
+
+    def visualize_data(self, data):
+        embeddings = get_embeddings(3):
+        projections, timing = downsize_data(data, 3) 
+        
+        for name in timing:
+            title = f"{name} (time {timing[name]:.3f}s)"
+            plot_ids_embedding(projections[name], y, title)
+
+    def plot_ids_embedding(self, data, title):
+        self.encode_categorical('class', output)
+
+        cdict = { 0: 'blue', 1: 'red'}
+
+        df = pd.DataFrame({ 'x1': list(data[data.columns[0]]),
+                            'x2': list(data[data.columns[1]]),
+                            'x3': list(data[data.columns[2]]),
+                            'label': labels })
+    
+        for label in np.unique(labels):
+            idx = np.where(labels == label)
+            fig = px.scatter_3d(df, x='x1', y='x2', z='x3',
+                                color='label', color_discrete_map=cdict,
+                                opacity=.4)
+
+            fig.update_layout(
+                title = title
+            )
+        fig.write_html(str(self.output_path + title)
+        fig.show()
 
 def preprocess_ids_data():
-    #ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
+    ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
 
-    ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
+    #ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
 
     #ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Test_data.csv'
 

@@ -192,5 +192,16 @@ class clustering():
         # plt.clf()
         return fig
 
+    def estimate_node_labels(train_data, train_labels, test_data, test_labels):
+
+        label_prop_model = LabelPropagation(n_jobs=-1)
+
+        label_prop_model.fit(train_data, train_labels)
+
+        data_predict = label_prop_model.score(test_data, test_labels)
+
+        print("LabelProp Accuracy: ", data_predict)
+
+        return data_predict
 
 
