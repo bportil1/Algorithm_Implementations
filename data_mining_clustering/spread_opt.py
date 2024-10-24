@@ -235,7 +235,7 @@ class aew(self, data_graph, data):
 
         print("Edge Weight Generation Complete")
 
-    def rewrite_edges():
+    def rewrite_edges(self):
 
         rows, cols = graph.nonzero()
 

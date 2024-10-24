@@ -12,104 +12,203 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 
 class clustering():
-    def __init__(self, train_data, train_labels, test_data, test_labels, data_path):
+    def __init__(self, train_data, train_labels, test_data, test_labels, clustering_methods=None, workers = 1):
         self.train_data = train_data
         self.train_labels = train_labels
         self.test_data = test_data
         self.test_labels = test_labels
-        self.data_path = data_path
-        self.clustering_methods = ['Kmeans', 'spectral', 'Agglomerative', 'DBSCAN']
+        self.base_path = './'
+        self.clustering_methods = clustering_methods
+        self.clustering_funcs = None
+        self.workers = workers
+        
+        if clustering_methods == None:
+            self.get_clustering_methods()
+    
+        self.get_clustering_funcs()
 
+
+    def get_clustering_methods(self):
+        self.clustering_methods = ['Kmeans', 'Spectral', 'Agglomerative', 'LabelProp',
+                                   'FeatureAgglomeration', 'DBSCAN', 'HDBSCAN', 'MeanShift',
+                                   'OPTICS', 'SpectralBiclustering', 'AffinityProp',
+                                   'Birch', 'BisectingKmeans'
+                                   ]
+
+    def get_clustering_funcs(self):
+
+        self.clustering_funcs = {
+                'Kmeans': self.generate_kmeans(get_clustering_hyperparams('Kmeans'),
+                'Spectral': self.generate_spectral(get_clustering_hyperparams('Spectral'),
+                'Agglomerative': self.generate_agglomerative(get_clustering_hyperparams('Agglomerative'),
+                'LabelProp': self.generate_labelprop(get_clustering_hyperparams('LabelProp'),
+                'FeatureAgglomeration': self.generate_featureagglomeration(get_clustering_hyperparams('FeatureAgglomeration'),
+                'DBSCAN': self.hdbscan(get_clustering_hyperparams('DBSCAN'),
+                'HDBSCAN': self.hdbscan(get_clustering_hyperparams('HDBSCAN'),
+                'MeanShift': self.generate_meanshift(get_clustering_hyperparams('MeanShift'),
+                'OPTICS': self.generate_optics(get_clustering_hyperparams('OPTICS'),
+                'SpectralBiclustering': self.generate_spectralbiclustering(get_clustering_hyperparams('SpectralBiclustering'),
+                'SpectralCoclustering': self.generate_spectralcoclustering(get_clustering_hyperparams('SpectralCoclustering'),
+                'AffinityProp': self.generate_affinityprop(get_clustering_hyperparams('AffinityProp'),
+                'Birch': self.generate_birch(get_clustering_hyperparams('Birch'),
+                'BisectingKmeans': self.generate_bisectingkmeans(get_clustering_hyperparams('BisectingKmeans'),
+
+                }
+ 
     def get_clustering_hyperparams(self, cluster_alg):
 
-        if cluster_alg == 'Kmeans':
-            hyper_para_name = 'n_clusters'
-            random_state = 0 
-            hyper_para_list = [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20]
-        elif cluster_alg == 'spectral':
-            hyper_para_name = 'n_clusters'
-            assign_labels = 'discretize'
-            hyper_para_list = np.arange(2, 31, step = 1)
-        elif cluster_alg == 'Agglomerative':
-            hyper_para_name = 'n_clusters'
-            linkage = 'ward'
-            hyper_para_list = [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20]
-        elif cluster_alg == 'DBSCAN':
-            hyper_para_name = 'eps'
-            min_samples = 2
-            hyper_para_list = np.arange(5,150 , step = 5)
+        clustering_params = {
+                'Kmeans': {'k_means_alg': ('lloyd', 'elkan'),
+                            'n_clusters' : [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20]
+                },
+                'Spectral': {'n_clusters': [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20],
+                             'assign_labels': ('kmeans', 'discretize', 'cluster_qr'),
+                             'workers': self.workers
+                },
+                'Agglomerative': {'n_clusters': [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20],
+                                  'linkage': ('ward', 'complete', 'average', 'single'),
+                                  'metric': ('euclidean', 'manhattan', 'cosine')
+                },
+                'LabelProp': {'kernel': ('rbf', 'knn'),
+                              'n_neighbors': [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20],
+                              'gamma': [15, 18, 20, 23, 25],
+                              'workers': self.workers
+                },
+                'FeatureAgglomeration': {'n_clusters': [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20],
+                                         'linkage': ('ward', 'complete', 'average', 'single'),
+                                         'metric': ('euclidean', 'manhattan', 'cosine')
+                },
+                'DBSCAN': {n_clusters = [5, 10, 15, 20, 25, 30]
+                },
+                'HDBSCAN': {min_cluster_size = [5, 10, 15, 20, 25, 30]
+                },
+                'MeanShift': {'workers': self.workers
+                },
+                'OPTICS': {eps: [range(5,150)]
+                },
+                'SpectralBiclustering': {'n_clusters': [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20],
+                                         'method': ('bistochastic', 'scale', 'log'),
+                                         'n_components': [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20],
+                                         'n_best': [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20],
+                },
+                'SpectralCoclustering': {'n_clusters': [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20]
+                },
+                'AffinityProp': {'none': None
+                },
+                'Birch': {'n_clust'BisectingKmeans'ers': [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20],
+                          'threshold': [.1, .2, .3, .5, .7, .8, .9]
+                },
+                'BisectingKmeans': {'k_means_alg': ('lloyd', 'elkan'),
+                                    'n_clusters' : [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20],
+                                    'bisecting_strategy': ('biggest_inertia', 'largest_cluster')
+                },
+        }
+        return clustering_params[cluster_alg]
 
-         ##### turn this line into  class attributes
-        return hyper_para_name, hyper_para_list
+    def generate_clustering(self):
 
+        for alg in self.clustering_methods:
+            ctg_matrices_path = self.base_path + alg + '/ctg_matrices'  
+            visualizations_path = self.base_path + alg + '/visualizations' 
+            results_path = self.base_path + alg + '/results' 
+     
+            os.makedirs(ctg_matrices_path, exist_ok=True)
+            os.makedirs(visualizations_path, exist_ok=True)
+            os.makedirs(results_path, exist_ok=True)
 
-    def clustering_training(self, save_model = True):
+            clustering = self.clustering_funcs[alg]
 
-        model_path = self.data_path
+    def generate_kmeans(self, hyperparams):
+        outpath = self.base_path + "kmeans/"
+        for alg in hyper_params['k_means_alg']:
+            for num_clust in hyper_params['n_clusters']:
+                clustering = KMeans(n_clusters=num_clust, algorithm=alg)
+                cluster_evaluation(alg, (alg, num_clus), clustering) 
 
-        cluster_valuation = pd.DataFrame()
+    def generate_spectral(self, hyperparams):
+        outpath = self.base_path + "spectral/"
+        for alg in hyper_params['assign_labels']:
+            for num_clust in hyper_params['n_clusters']:
+                clustering = SpectralClustering(n_clusters=num_clust, assign_labels=alg)
+                cluster_evaluation(alg, (alg, num_clus), clustering) 
 
-        for cluster_alg in self.clustering_methods:
-        
-            print("Computing ", cluster_alg)
-
-            hyper_para_name, hyper_para_list = self.get_clustering_hyperparams(cluster_alg)
-
-            for hyper_para in hyper_para_list:
-
-                if cluster_alg == 'Kmeans': 
-
-                    clustering_model = KMeans(n_clusters=hyper_para).fit(self.train_data)
-            
-                elif cluster_alg == 'spectral':
-
-                    clustering_model = SpectralClustering( n_clusters = hyper_para, affinity='precomputed_nearest_neighbors', assign_labels = 'discretize').fit(self.train_data)
-
-
-                elif cluster_alg == 'Aggloromative':
-
-                    clustering_model = AgglomerativeClustering(n_clusters= hyper_para, linkage= 'ward').fit(self.train_data)
-
-                elif cluster_alg == 'DBSCAN':
-
-                    clustering_model = DBSCAN(eps=hyper_para/100, min_samples=2).fit(self.train_data)
-
-
-                if cluster_alg == 'Kmeans':
-
-                    test_pred = clustering_model.predict(self.test_data)
-
-                else:
-
-                    test_pred = clustering_model.fit_predict(self.train_data)
-
-                eval, cntg = self.cluster_evaluation(test_pred, self.test_labels)
-
-                print("Accuracy: ", accuracy_score(test_pred, self.test_labels))
-
-            cluster_valuation = pd.concat([cluster_valuation, eval], ignore_index=True)
-            
-            cluster_valuation.reset_index()
-
-            if save_model:
-            
-                cluster_model_path = model_path + '/' + cluster_alg + '/cluster_models'
-
-                os.makedirs(cluster_model_path, exist_ok=True)
-
-                cluster_model_name = (cluster_model_path + '/clustering_model_' + str(hyper_para) + '-clusters.sav')
+    def generate_agglomerative(self, hyperparams):
+        outpath = self.base_path + "agglomerative/"
+        for alg in hyper_params['linkage']:
+            for metric in hyper_params['metric']:
+                if alg == 'ward' and metric != 'euclidean':
+                    continue
                 
-                pickle.dump(clustering_model, open(cluster_model_name, 'wb'))
-        
-            #cluster_valuation.insert(0, hyper_para_name, hyper_para_list)
+                for num_clust in hyper_params['n_clusters']:
+                    clustering = AgglomerativeClustering(n_clusters=num_clust, assign_labels=alg)
+                    cluster_evaluation(alg, (alg, num_clus), clustering)
 
-            valuation_name = Path(model_path + '/' + cluster_alg + '/test/' + 'test_clustering_evaluation.csv')
-            
-            valuation_name.parent.mkdir(parents=True, exist_ok=True)
-            
-            cluster_valuation.to_csv(valuation_name)
 
-    def cluster_evaluation(self, labels_pred, labels_true):
+    def generate_labelprop(self, hyperparams):
+
+        return 0
+
+    def generate_featureagglomeration(self, hyperparams):
+
+        return 0
+
+    def generate_dbscan(self, hyperparams):
+
+        return 0
+
+    def generate_hdbscan(self, hyperparams):
+
+        return 0
+
+    def generate_meanshift(self, hyperparams):
+
+        return 0
+
+    def generate_optics(self, hyperparams):
+
+        return 0
+
+    def generate_spectralbiclustering(self, hyperparams):
+
+        return 0
+
+    def generate_coclustering(self, hyperparams):
+
+        return 0
+
+    def generate_affinityprop(self, hyperparams):
+
+        return 0
+
+    def generate_birch(self, hyperparams):
+
+        return 0
+
+    def generate_bisectingkmeans(self, hyperparams):
+
+        return 0
+
+    def cluster_evaluation(self, alg, hyperparameters, model):
+
+        ctg_matrices_path = self.base_path + alg + '/ctg_matrices'  
+        visualizations_path = self.base_path + alg + '/visualizations'
+        results_path = self.base_path + alg + '/results'  
+
+        cv_res = cross_validate(model, self.train_data, self.train_labels, cv = 5, retur_train_score = True)
+        avg_train_acc = np.average(cv_res['train_score'])
+        avg_test_acc = np.average(cv_res['test_score'])
+        avg_fit_time = np.average(cv_res['fit_time'])
+
+        labels_pred = model.fit_predict(self.test_data)
+        labels_true = self.test_labels
+
+        test_set_acc = accuracy_score(labels_pred, labels_true)
+
+        labels = model.fit_predict(self.train_data)
+
+        silhoutte = metrics.silhouette_score(self.train_data, labels, metric='euclidean')     # Silhouette Coefficient
+        calinski_harabasz = metrics.calinski_harabasz_score(self.train_data, labels)  # Calinski-Harabasz Index
+        davies_bouldin = metrics.davies_bouldin_score(self.train_data, labels)    # Davies-Bouldin Index
 
         ri = metrics.rand_score(labels_true, labels_pred)   # RAND score
         ari = metrics.adjusted_rand_score(labels_true, labels_pred) # Adjusted RAND score
@@ -126,71 +225,31 @@ class clustering():
 
         cntg_mtx = contingency_matrix(labels_true, labels_pred)     # Contingency Matrix
 
-        d = {'RAND' : ri , 'ARAND': ari, 'MIS' : mis, 'AMIS' : amis, 'NMIS' : nmis, 'Hmg' : hmg, 'Cmplt' : cmplt,
-                     'V_meas' : v_meas, 'FMs' : fowlkes_mallows}
-        df = pd.DataFrame.from_dict(d,  orient='index')
+        d = { clustering: alg, hyperparameters: hyperparams, 'train_score_avg': avg_train_acc, 
+                'test_score_avg_cv': avg_test_acc, 'avg_fit_time': avg_fit_time, 'test_set_acc': test_set_acc, 'Silhoutte' : silhoutte, 'Calinski_Harbasz' : calinski_harabasz, 'Davies_Bouldin' : davies_bouldin,
+             'RAND' : ri , 'ARAND': ari, 'MIS' : mis, 'AMIS' : amis, 'NMIS' : nmis, 'Hmg' : hmg, 'Cmplt' : cmplt,
+             'V_meas' : v_meas, 'FMs' : fowlkes_mallows}
+        df = pd.DataFrame.from_dict(d)
         
-        #turn this into class attributes
-        return df, cntg_mtx
+        filename_base = '/alg'
 
-    def model_evaluation(self):
+        for hyper_param in hyperparameters:
 
-        silhoutte = metrics.silhouette_score(X, labels, metric='euclidean')     # Silhouette Coefficient
-        calinski_harabasz = metrics.calinski_harabasz_score(X, labels)  # Calinski-Harabasz Index
-        davies_bouldin = metrics.davies_bouldin_score(X, labels)    # Davies-Bouldin Index
+            filename_base += "_" + hyper_param 
 
-        d = {'Silhoutte' : silhoutte, 'Calinski_Harbasz' : calinski_harabasz, 'Davies_Bouldin' : davies_bouldin}
-    
-        return d
+        cntg_mtx_name = ctg_matrices_path + filename_base + ".csv"
 
-    def plot_clusters(twoD_vector, cluster_Labels, alg_name ='', hyper_para_name='default', hyp_para= 0):
-        core_samples_mask = np.zeros_like(cluster_Labels, dtype=bool)
-        # core_samples_mask[clustering.core_sample_indices_] = True
+        np.savetxt(cntg_mtx_name, cntg_mtx, delimiter=',', fmt='%d')
 
-        # Number of clusters in labels, ignoring noise if present.
-        n_clusters_ = len(set(cluster_Labels)) - (1 if -1 in cluster_Labels else 0)
-        n_noise_ = list(cluster_Labels).count(-1)
-        # 2d plot, may not keep Plot result
+        results_file_name = results_path + filename_base + ".csv"
 
-        '''
-        # Black removed and is used for noise instead.
-        unique_labels = set(cluster_Labels)
-        colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
+        df.to_csv(results_file_name, index=False)
 
-        labels = {}
+        vis_file_name = visualizations_path + filename_base + ".html"
 
-        for k, col in zip(unique_labels, colors):
-            if k == -1:
-                # Black used for noise.
-                col = [0, 0, 0, 1]
+        data_obj = data()
 
-            class_member_mask = cluster_Labels == k
-
-            xy = twoD_vector[class_member_mask]
-
-            labels[str(k+1)] = xy[0]
-
-            plt.plot(
-                xy[:, 0],
-                xy[:, 1],
-                "o",
-                markerfacecolor=tuple(col),
-                markeredgecolor="k",
-                markersize=5,
-                alpha= 0.4,
-            )
-        '''
-        for each in labels.keys():
-             plt.annotate(each,labels[each], weight= 'bold', size = 20)
-
-        plt.title( alg_name + ' with dim ( ' + str(ndims) + ')\n #'+ hyper_para_name +' = ' + str(hyp_para) )
-        fig = plt.gcf()
-        plt.show()
-        # fname = './Dikedataset_graphs/figs/synthetic-graph-comparison-graph2vec-' + str(ndims) + '-dims.png'
-        # fname = './SSD_data_test/SSD_graphs/SSD_agglomerative-' + str(ndims) + '-dims.png'
-        # fig.savefig(fname)
-        # plt.clf()
-        return fig
+        data.lower_dimensional_embedding(self.test_data, labels_pred, filename_base, vis_file_name)
 
     def estimate_node_labels(train_data, train_labels, test_data, test_labels):
 

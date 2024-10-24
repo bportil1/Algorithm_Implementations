@@ -108,15 +108,15 @@ class data():
     def generate_graphs(self, data_type):
         return kneighbors_graph(data_type, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
 
-    def visualize_data(self, data):
+    def lower_dimensional_embbedding(self, data, labels, title, path):
         embeddings = get_embeddings(3):
         projections, timing = downsize_data(data, 3) 
         
         for name in timing:
             title = f"{name} (time {timing[name]:.3f}s)"
-            plot_ids_embedding(projections[name], y, title)
+            plot_ids_embedding(projections[name], projections[name], title, path)
 
-    def plot_ids_embedding(self, data, title):
+    def plot_embedding(self, data, labels, title, path):
         self.encode_categorical('class', output)
 
         cdict = { 0: 'blue', 1: 'red'}
@@ -135,8 +135,11 @@ class data():
             fig.update_layout(
                 title = title
             )
-        fig.write_html(str(self.output_path + title)
-        fig.show()
+
+        outpath = path
+
+        fig.write_html(path)
+        #fig.show()
 
 def preprocess_ids_data():
     ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
