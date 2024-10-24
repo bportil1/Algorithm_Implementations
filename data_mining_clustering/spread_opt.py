@@ -221,7 +221,7 @@ class aew():
     def generate_edge_weights(self):
         print("Generating Edge Weights")
 
-        split_data = split(range(self.data_graph.shape[0]), cpu_count())
+        split_data = self.split(range(self.data_graph.shape[0]), cpu_count())
 
         with Pool(processes=cpu_count()) as pool:
             edge_weight_res = [pool.apply_async(self.edge_weight_computation, (section)) for section in split_data]
