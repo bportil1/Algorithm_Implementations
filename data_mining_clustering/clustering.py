@@ -17,7 +17,7 @@ class clustering():
         self.train_labels = train_labels
         self.test_data = test_data
         self.test_labels = test_labels
-        self.base_path = './'
+        self.base_path = './results/'
         self.clustering_methods = clustering_methods
         self.clustering_funcs = None
         self.workers = workers
@@ -36,18 +36,18 @@ class clustering():
     def get_clustering_funcs(self):
 
         self.clustering_funcs = {
-                'Kmeans': self.generate_kmeans(get_clustering_hyperparams('Kmeans'),
-                'Spectral': self.generate_spectral(get_clustering_hyperparams('Spectral'),
-                'Agglomerative': self.generate_agglomerative(get_clustering_hyperparams('Agglomerative'),
-                'LabelProp': self.generate_labelprop(get_clustering_hyperparams('LabelProp'),
-                'DBSCAN': self.hdbscan(get_clustering_hyperparams('DBSCAN'),
-                'HDBSCAN': self.hdbscan(get_clustering_hyperparams('HDBSCAN'),
-                'MeanShift': self.generate_meanshift(get_clustering_hyperparams('MeanShift'),
-                'OPTICS': self.generate_optics(get_clustering_hyperparams('OPTICS'),
-                'Birch': self.generate_birch(get_clustering_hyperparams('Birch'),
-                'BisectingKmeans': self.generate_bisectingkmeans(get_clustering_hyperparams('BisectingKmeans'),
+                'Kmeans': self.generate_kmeans(get_clustering_hyperparams('Kmeans')),
+                'Spectral': self.generate_spectral(get_clustering_hyperparams('Spectral')),
+                'Agglomerative': self.generate_agglomerative(get_clustering_hyperparams('Agglomerative')),
+                'LabelProp': self.generate_labelprop(get_clustering_hyperparams('LabelProp')),
+                'DBSCAN': self.hdbscan(get_clustering_hyperparams('DBSCAN')),
+                'HDBSCAN': self.hdbscan(get_clustering_hyperparams('HDBSCAN')),
+                'MeanShift': self.generate_meanshift(get_clustering_hyperparams('MeanShift')),
+                'OPTICS': self.generate_optics(get_clustering_hyperparams('OPTICS')),
+                'Birch': self.generate_birch(get_clustering_hyperparams('Birch')),
+                'BisectingKmeans': self.generate_bisectingkmeans(get_clustering_hyperparams('BisectingKmeans')),
 
-                }
+            }
  
     def get_clustering_hyperparams(self, cluster_alg):
 

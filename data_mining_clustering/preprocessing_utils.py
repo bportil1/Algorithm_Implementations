@@ -1,45 +1,53 @@
+from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
-from functools import reduce
-
-from multiprocessing import cpu_count
-
-import networkx as nx
-
-from node2vec import Node2Vec
+from sklearn.decomposition import TruncatedSVD
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.ensemble import RandomTreesEmbedding
+from sklearn.manifold import (
+    TSNE,
+)
+from sklearn.decomposition import PCA
+from sklearn.pipeline import make_pipeline
+from time import time
+import plotly.express as px
 
 class data():
     def __init__(self, train_data = None, train_labels = None, test_data = None, test_labels = None, output_path = None):
         self.train_data = train_data
         self.train_graph = None
         self.train_labels = train_labels
-        self.test_data = test_data
+        self.test_data = pd.DataFrame()
         self.test_graph = None
         self.test_labels = test_labels
-        self.output_path = "./"
 
     def scale_data(self, scaling):
         if scaling == 'standard':
             self.train_data[[col for col in self.train_data]] = StandardScaler().fit_transform(self.train_data[[col for col in self.train_data]])
-            if self.test_data != None:
+            if not self.test_data.empty:
                 self.test_data[[col for col in self.test_data]] = StandardScaler().fit_transform(self.test_data[[col for col in self.test_data]])
         elif scaling == 'min_max':
             min_max_scaler = MinMaxScaler()
             self.train_data[[col for col in self.train_data]] = min_max_scaler.fit_transform(self.train_data[[col for col in self.train_data]])
-            if self.test_data != None:
+            if not self.test_data.empty:
                 self.test_data[[col for col in self.test_data]] = min_max_scaler.fit_transform(self.test_data[[col for col in self.test_data]])
 
         else:
             print("Scaling arg not supported")
         
-    def encode_categorical(self, column_name):
+    def encode_categorical(self, column_name, target_set):
         label_encoder = LabelEncoder()
-        label_encoder.fit(self.train_data[column_name])
 
-        self.train_data[column_name] = label_encoder.transform(self.train_data[column_name])
-        self.test_data[column_name] = label_encoder.transform(self.test_data[column_name])
+        if target_set == 'data': 
+            label_encoder.fit(list(self.train_data[column_name])+list(self.test_data[column_name])) 
+            self.train_data[column_name] = label_encoder.transform(self.train_data[column_name])
+            self.test_data[column_name] = label_encoder.transform(self.test_data[column_name])
+        elif target_set == 'labels':
+            label_encoder.fit(list(self.train_labels[column_name])+list(self.test_labels[column_name])) 
+            self.train_labels[column_name] = label_encoder.transform(self.train_labels[column_name])
+            self.test_labels[column_name] = label_encoder.transform(self.test_labels[column_name])
 
     def load_data(self, datapath, data_type):
         if data_type == 'train':
@@ -47,14 +55,16 @@ class data():
         elif data_type == 'test':
             self.test_data = pd.read_csv(datapath)
 
-    def load_labels(self, data_type, datapath, from_data = False):
+    def load_labels(self, data_type, datapath=None, from_data = False):
     
         if from_data:
             if data_type == 'train':
-                self.train_labels = self.train_labels['class']
+                self.train_labels = pd.DataFrame(self.train_data['class'], columns=['class'])
+                #self.train_labels.columns = ['class']
                 self.train_data = self.train_data.loc[:, self.train_data.columns != 'class']
             elif data_type == 'test':
-                self.test_labels = self.test_labels['class']
+                self.test_labels['class'] = pd.DataFrame(self.test_data['class'], columns=['class'])
+                #self.test_labels.columns = ['class']
                 self.test_data = self.test_data.loc[:, self.test_data.columns != 'class']
         else:
             if data_type == 'train':
@@ -63,7 +73,7 @@ class data():
                 self.test_labels = pd.read_csv(datapath)
 
     def split_data(self, split_size):
-        self.train_data, self.train_labels, self.test_data, self.test_labels = train_test_split(self.train_data, self.train_labels, test_size = split_size)
+        self.train_data, self.test_data, self.train_labels, self.test_labels = train_test_split(self.train_data, self.train_labels, test_size = split_size)
 
     def get_embeddings(self, num_components, embedding_subset = None):
         embeddings = {
@@ -93,14 +103,14 @@ class data():
                 out_dict[key] = value
             return out_dict
 
-    def downsize_data(self, data, num_components):
-        embeddings = get_embeddings(num_components)
+    def downsize_data(self, data, labels, num_components):
+        embeddings = self.get_embeddings(num_components)
 
         projections, timing = {}, {}
         for name, transformer in embeddings.items():
             print(f"Computing {name}...")
             start_time = time()
-            projections[name] = transformer.fit_transform(X, y)
+            projections[name] = transformer.fit_transform(data, labels)
             timing[name] = time() - start_time
 
         return projections, timing 
@@ -108,23 +118,22 @@ class data():
     def generate_graphs(self, data_type):
         return kneighbors_graph(data_type, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
 
-    def lower_dimensional_embbedding(self, data, labels, title, path):
-        embeddings = get_embeddings(3):
-        projections, timing = downsize_data(data, 3) 
+    def lower_dimensional_embedding(self, data, labels, num_dims, passed_title, path):
+        embeddings = self.get_embeddings(num_dims)
+        projections, timing = self.downsize_data(data, labels, num_dims) 
         
         for name in timing:
-            title = f"{name} (time {timing[name]:.3f}s)"
-            plot_ids_embedding(projections[name], projections[name], title, path)
+            title = f"{name} (time {timing[name]:.3f}s  {passed_title} {projections[name]} )"
+            file_path = str(path) + str(name) + '.html'
+            self.plot_embedding(projections[name], labels, title, file_path)
 
     def plot_embedding(self, data, labels, title, path):
-        self.encode_categorical('class', output)
-
         cdict = { 0: 'blue', 1: 'red'}
 
-        df = pd.DataFrame({ 'x1': list(data[data.columns[0]]),
-                            'x2': list(data[data.columns[1]]),
-                            'x3': list(data[data.columns[2]]),
-                            'label': labels })
+        df = pd.DataFrame({ 'x1': data[:,0],
+                            'x2': data[:,1],
+                            'x3': data[:,2],
+                            'label': labels['class'] })
     
         for label in np.unique(labels):
             idx = np.where(labels == label)
@@ -136,15 +145,13 @@ class data():
                 title = title
             )
 
-        outpath = path
-
         fig.write_html(path)
         #fig.show()
 
 def preprocess_ids_data():
-    ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
+    #ds_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
 
-    #ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
+    ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
 
     #ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Test_data.csv'
 

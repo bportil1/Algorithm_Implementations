@@ -1,29 +1,29 @@
-import sklearn
-import pandas as pd
-from sklearn.neighbors import kneighbors_graph
-from sklearn.preprocessing import LabelEncoder
-from sklearn.semi_supervised import LabelPropagation
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.cluster import SpectralClustering
-from math import exp
+#import sklearn
+#import pandas as pd
+#from sklearn.neighbors import kneighbors_graph
+#from sklearn.preprocessing import LabelEncoder
+#from sklearn.semi_supervised import LabelPropagation
+#from sklearn.metrics.pairwise import cosine_similarity
+#from sklearn.cluster import SpectralClustering
+#from math import exp
 from spread_opt import *
-from lower_dim_mappings_utils import *
+#from lower_dim_mappings_utils import *
 from preprocessing_utils import *
-from sklearn.model_selection import train_test_split
-from multiprocessing.sharedctypes import RawArray
+#from sklearn.model_selection import train_test_split
+#from multiprocessing.sharedctypes import RawArray
 from clustering import *
 
-import sys
+#import sys
 
-import numpy as np
+#import numpy as np
 
-from sklearn import datasets
+#from sklearn import datasets
 
-from sklearn.decomposition import PCA
+#from sklearn.decomposition import PCA
 
-from sklearn.preprocessing import MinMaxScaler
+#from sklearn.preprocessing import MinMaxScaler
 
-np.set_printoptions(threshold=sys.maxsize)
+#np.set_printoptions(threshold=sys.maxsize)
 
 def generate_graph(train_data, train_labels):
     print("Generating Graph")
@@ -166,62 +166,37 @@ def rewrite_edges(graph, weights):
 
 
 if __name__ == '__main__':
-    train_data, train_labels, test_data, test_labels = preprocess_ids_data()
+    #ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
 
-    #data_path = './orig_data/'
+    ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
 
-    print('#####Initial Data#####')
+    data_obj = data()
 
-    #clustering1 = clustering(train_data, train_labels, test_data, test_labels, data_path)
+    data_obj.load_data(ids_train_file, 'train')
 
-    #clustering1.clustering_training()
+    data_obj.load_labels('train', from_data=True)
 
-    #print(train_data.iloc[0])
+    data_obj.split_data(.2)
 
-    #print(train_labels.iloc[0])
+    data_obj.encode_categorical('protocol_type', 'data')
+
+    data_obj.encode_categorical('service', 'data')
+
+    data_obj.encode_categorical('flag', 'data')
+
+    data_obj.encode_categorical('class', 'labels')
+
+    data_obj.scale_data('min_max')
+
+    init_path = './results/orig_data_visualization/'
+
+    os.makedirs(init_path, exist_ok=True)
+
+    data_obj.lower_dimensional_embedding(data_obj.train_data, data_obj.train_labels, 3, 'Original Data: 3-Dimensions', init_path)
+
+
     '''
-    graph = generate_graph(train_data)
-    #print(graph)
-
-    train_adj_matr, gamma = generate_optimal_edge_weights(train_data, graph, 1)
-    
-    graph = rewrite_edges(graph, train_adj_matr)
-    #print(graph)
-
-    #train_vectors = inferN2V(graph)
-
-    test_graph = generate_graph(test_data)
-
-    test_adj_matr = generate_edge_weights(test_data, test_graph, gamma)
-
-    test_graph = rewrite_edges(test_graph, test_adj_matr)
-    '''
-    #test_vectors = inferN2V(test_graph)
-    
-    #train_vectors, test_vectors = inferN2V(graph, test_graph)
-
-    #print(train_labels)
-    
-    '''
-    train_vectors = loadN2V('train')
-
-    train_labels['index'] = train_labels['index'].astype(int)
-
-    train_vectors['index'] = train_vectors['index'].astype(int)
-^CProcess ForkPoolWorker-294:
-
-    train_vectors = train_vectors.merge(train_labels[['index', 'class']], how='left', on='index')
-
-    train_labels = train_vectors['class']
-
-    train_labels = train_labels.values.tolist()
-
-    #train_labels = flat
-    '''
-    #clustering2 = clustering(train_vectors.loc[:, train_vectors.columns != 'index'], train_labels, test_vectors.loc[:, test_vectors.columns != 'index'], test_labels, data_path)
-
-    #clustering2.clustering_training()
-    
+    train_data, train_labels, test_data, test_labels = preprocess_ids_data
     train_labels =  train_labels['class']
 
     test_labels = test_labels['class']
@@ -345,3 +320,4 @@ if __name__ == '__main__':
                 test_pred = clustering_model.fit_predict(test_data)
 
                 print("Agglo Test Accuracy: ", accuracy_score(test_pred, test_labels))
+        '''

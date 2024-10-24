@@ -4,13 +4,13 @@ from multiprocessing import cpu_count
 from math import isclose
 from math import ceil
 
-class aew(self, data_graph, data):
-    self.similarity_matrix = similarity_matrix = np.zeros((train_data_graph.shape[0], train_data_graph.shape[0]))
+class aew():
+    def __init__(self, data_graph, data):
 
-    self.gamma = np.ones(train_data.loc[[0]].shape[1])
-    self.data_graph = data_graph
-    self.data = data
-
+        self.similarity_matrix = similarity_matrix = np.zeros((train_data_graph.shape[0], train_data_graph.shape[0]))
+        self.gamma = np.ones(train_data.loc[[0]].shape[1])
+        self.data_graph = data_graph
+        self.data = data
 
     def normalization_computation(self, section):
         res = []
