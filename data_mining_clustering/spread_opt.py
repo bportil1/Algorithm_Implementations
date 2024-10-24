@@ -5,7 +5,7 @@ from math import isclose
 from math import ceil
 
 class aew():
-    def __init__(self, data_graph, data, test_graph, test_data, precomputed_gamma=None):
+    def __init__(self, data_graph, data, precomputed_gamma=None):
 
         self.similarity_matrix = np.zeros((data_graph.shape[0], data_graph.shape[0]))
         self.gamma = precomputed_gamma
@@ -13,7 +13,7 @@ class aew():
         self.data = data
 
         if precomputed_gamma == None:
-            self.gamma = np.ones(data.loc[[0]].shape[1])
+            self.gamma = np.ones(self.data.loc[[0]].shape[1])
 
     def normalization_computation(self, section):
         res = []
@@ -57,18 +57,18 @@ class aew():
 
             print(idx, " ", curr_start, " ", curr_end)
 
-            split_data = split(range(curr_start, curr_end), cpu_count())
+            split_data = self.split(range(curr_start, curr_end), cpu_count())
     
             print(split_data)
 
-            normalization_parallel_caller(self, split_data)
+            self.normalization_parallel_caller(split_data)
 
             curr_start = curr_end
 
         print("Finished Normalizing Edge Weights")
         return similarity_matrix
 
-    def similarity_function(pt1_idx, pt2_idx):
+    def similarity_function(self, pt1_idx, pt2_idx):
         point1 = np.asarray(self.data.loc[[pt1_idx]])
         point2 = np.asarray(self.data.loc[[pt2_idx]])
 
@@ -104,10 +104,10 @@ class aew():
     def objective_function(self):
         errors = []
 
-        split_data = split(range(self.data_graph.shape[0]), cpu_count())
+        split_data = self.split(range(self.data_graph.shape[0]), cpu_count())
 
         with Pool(processes=cpu_count()) as pool:
-            errors = [pool.apply_async(objective_computation, (section, )) \
+            errors = [pool.apply_async(self.objective_computation, (section, )) \
                                                                  for section in split_data]
 
         error = [error.get() for error in errors]
@@ -129,7 +129,7 @@ class aew():
                 wij = self.similarity_function(idx, vertex)
                 dii += wij
                 x_hat += wij*self.data.loc[[vertex]].to_numpy()[0]
-                dW_vals = dW_dsigma(point1, point2, idx, vertex)
+                dW_vals = self.dW_dsigma(point1, point2, idx, vertex)
                 sec_term_1 += dW_vals* self.data.loc[[vertex]].to_numpy()[0]
                 sec_term_2 = sec_term_2 + dW_vals
             if dii > 0 and not isclose(dii, 0, abs_tol=1e-9):
@@ -149,20 +149,20 @@ class aew():
     def gradient_function(self):
         gradient = []
     
-        split_data = split(range(self.data_graph.shape[0]), cpu_count())
+        split_data = self.split(range(self.data_graph.shape[0]), cpu_count())
 
         with Pool(processes=cpu_count()) as pool:
-            gradients = [pool.apply_async(gradient_computation, (section)) \
+            gradients = [pool.apply_async(self.gradient_computation, (section, )) \
                                                                  for section in split_data]
 
             gradients = [gradient.get() for gradient in gradients]
 
-        gradient = np.zeros(train_data.loc[[0]].shape[1])
+        gradient = np.zeros(self.data.loc[[0]].shape[1])
         for grad in gradients:
             gradient = gradient + grad
         return gradient
 
-    def dW_dsigma(point1, point2, pt1_idx, pt2_idx):
+    def dW_dsigma(self, point1, point2, pt1_idx, pt2_idx):
     
         derivative = []
 
@@ -173,20 +173,20 @@ class aew():
 
         return np.asarray(derivative)
 
-    def dD_dsigma(dW_vals):
+    def dD_dsigma(self, dW_vals):
         return np.sum(dW_vals)
 
-    def gradient_descent(learning_rate, num_iterations, tol):
+    def gradient_descent(self, learning_rate, num_iterations, tol):
         print("Beggining Gradient Descent")
 
         # Perform the gradient descent iterations
         for i in range(num_iterations):
             print("Current Iteration: ", str(i+1))
             print("Computing Gradient")
-            gradient = gradient_function()
+            gradient = self.gradient_function()
             print("Current Gradient: ", gradient)
             print("Computing Error")
-            curr_error = objective_function()
+            curr_error = self.objective_function()
             print("Current Error: ", curr_error)
             if curr_error < tol:
                 break
@@ -196,12 +196,12 @@ class aew():
             print("Updated Gamma: ", self.gamma)
         print("Completed Gradient Descent")
 
-    def generate_optimal_edge_weights(num_iterations):
+    def generate_optimal_edge_weights(self, num_iterations):
         print("Generating Optimal Edge Weights")
 
-        gradient_descent(.1, num_iterations, .01)
+        self.gradient_descent(.1, num_iterations, .01)
 
-        generate_edge_weights()
+        self.generate_edge_weights()
 
     def edge_weight_computation(self, section):
 
@@ -214,8 +214,6 @@ class aew():
 
             for vertex in self.data_graph.indices[point]:
 
-                #point2 = np.asarray(self.data.loc[[vertex]])
-
                 res.append((idx, vertex, self.similarity_function(idx, vertex)))
 
         return res
@@ -226,17 +224,17 @@ class aew():
         split_data = split(range(self.data_graph.shape[0]), cpu_count())
 
         with Pool(processes=cpu_count()) as pool:
-            edge_weight_res = [pool.apply_async(edge_weight_computation, (section)) for section in split_data]
+            edge_weight_res = [pool.apply_async(self.edge_weight_computation, (section)) for section in split_data]
 
             edge_weights = [edge_weight.get() for edge_weight in edge_weight_res]
 
         for section in edge_weights:
             for weight in section:
-                self.similarity_matrix_temp[weight[0]][weight[1]] = weight[2]
+                self.similarity_matrix[weight[0]][weight[1]] = weight[2]
 
-        laplacian_normalization()
+        self.laplacian_normalization()
 
-        rewrite_edges()
+        self.rewrite_edges()
 
         self.data_graph = self.data_graph.toarray()
 

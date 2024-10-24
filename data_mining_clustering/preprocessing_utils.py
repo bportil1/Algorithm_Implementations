@@ -12,6 +12,7 @@ from sklearn.manifold import (
 from sklearn.decomposition import PCA
 from sklearn.pipeline import make_pipeline
 from time import time
+from sklearn.neighbors import kneighbors_graph
 import plotly.express as px
 
 class data():
@@ -54,6 +55,7 @@ class data():
     def load_data(self, datapath, data_type):
         if data_type == 'train':
             self.train_data = pd.read_csv(datapath)
+            self.train_data = self.train_data.head(10000)
         elif data_type == 'test':
             self.test_data = pd.read_csv(datapath)
 
@@ -76,6 +78,15 @@ class data():
 
     def split_data(self, split_size):
         self.train_data, self.test_data, self.train_labels, self.test_labels = train_test_split(self.train_data, self.train_labels, test_size = split_size)
+
+        self.reset_indices()
+
+    def reset_indices(self):
+        self.train_data = self.train_data.reset_index(drop=True)
+        self.train_labels = self.train_labels.reset_index(drop=True)
+        self.test_data = self.test_data.reset_index(drop=True)
+        self.test_labels = self.test_labels.reset_index(drop=True)
+
 
     def get_embeddings(self, num_components, embedding_subset = None):
         embeddings = {
@@ -105,12 +116,10 @@ class data():
                 out_dict[key] = value
             return out_dict
 
-    def downsize_data(self, data_type, num_components):
+    def downsize_data(self, data, data_type, num_components):
         if data_type == 'train':
-            data = self.train_graph
             labels = self.train_labels
         elif data_type == 'test':
-            data = self.test_graph
             labels = self.test_labels
 
         embeddings = self.get_embeddings(num_components)
@@ -130,22 +139,22 @@ class data():
         elif data_type == 'test':
             self.test_graph = kneighbors_graph(self.test_data, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
 
-    def lower_dimensional_embedding(self, data_type, passed_title, path, mapping = ''):
+    def lower_dimensional_embedding(self, data, data_type, passed_title, path, mapping = ''):
         if data_type == 'train':
-            if mapping == 'proj':
-                data = self.train_projection
-            elif mapping == 'graph':
-                data = self.train_graph
-            else:
-                data = self.train_data
+            #f mapping == 'proj':
+            #   data = self.train_projection
+            #lif mapping == 'graph':
+            #   data = self.train_graph
+            #lse:
+            #   data = self.train_data
             labels = self.train_labels
         elif data_type == 'test':
-            if mapping == 'proj':
-                data = self.train_projection
-            elif mapping == 'graph':
-                data = self.train_graph
-            else:
-                data = self.test_data 
+            #f mapping == 'proj':
+            #   data = self.train_projection
+            #lif mapping == 'graph':
+            #   data = self.train_graph
+            #lse:
+            #   data = self.test_data 
             labels = self.test_labels
 
         embeddings = self.get_embeddings(3)

@@ -243,7 +243,7 @@ class clustering():
 
         vis_file_name = visualizations_path + filename_base + ".html"
 
-        data_obj = data()
+        data_obj = data(test_labels = labels_pred)
 
-        data.lower_dimensional_embedding(self.test_data, labels_pred, filename_base, vis_file_name)
+        data.lower_dimensional_embedding(self.test_data, 'test', filename_base, vis_file_name)
 
