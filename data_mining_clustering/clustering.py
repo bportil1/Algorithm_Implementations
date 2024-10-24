@@ -27,12 +27,10 @@ class clustering():
     
         self.get_clustering_funcs()
 
-
     def get_clustering_methods(self):
         self.clustering_methods = ['Kmeans', 'Spectral', 'Agglomerative', 'LabelProp',
-                                   'FeatureAgglomeration', 'DBSCAN', 'HDBSCAN', 'MeanShift',
-                                   'OPTICS', 'SpectralBiclustering', 'AffinityProp',
-                                   'Birch', 'BisectingKmeans'
+                                   'DBSCAN', 'HDBSCAN', 'MeanShift',
+                                   'OPTICS', 'Birch', 'BisectingKmeans'
                                    ]
 
     def get_clustering_funcs(self):
@@ -42,14 +40,10 @@ class clustering():
                 'Spectral': self.generate_spectral(get_clustering_hyperparams('Spectral'),
                 'Agglomerative': self.generate_agglomerative(get_clustering_hyperparams('Agglomerative'),
                 'LabelProp': self.generate_labelprop(get_clustering_hyperparams('LabelProp'),
-                'FeatureAgglomeration': self.generate_featureagglomeration(get_clustering_hyperparams('FeatureAgglomeration'),
                 'DBSCAN': self.hdbscan(get_clustering_hyperparams('DBSCAN'),
                 'HDBSCAN': self.hdbscan(get_clustering_hyperparams('HDBSCAN'),
                 'MeanShift': self.generate_meanshift(get_clustering_hyperparams('MeanShift'),
                 'OPTICS': self.generate_optics(get_clustering_hyperparams('OPTICS'),
-                'SpectralBiclustering': self.generate_spectralbiclustering(get_clustering_hyperparams('SpectralBiclustering'),
-                'SpectralCoclustering': self.generate_spectralcoclustering(get_clustering_hyperparams('SpectralCoclustering'),
-                'AffinityProp': self.generate_affinityprop(get_clustering_hyperparams('AffinityProp'),
                 'Birch': self.generate_birch(get_clustering_hyperparams('Birch'),
                 'BisectingKmeans': self.generate_bisectingkmeans(get_clustering_hyperparams('BisectingKmeans'),
 
@@ -74,28 +68,16 @@ class clustering():
                               'gamma': [15, 18, 20, 23, 25],
                               'workers': self.workers
                 },
-                'FeatureAgglomeration': {'n_clusters': [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20],
-                                         'linkage': ('ward', 'complete', 'average', 'single'),
-                                         'metric': ('euclidean', 'manhattan', 'cosine')
+                'DBSCAN': {'eps': np.arange(5,150 , step = 5),
+                           'min_samples': [5, 10, 15, 20, 25, 30]   
                 },
-                'DBSCAN': {n_clusters = [5, 10, 15, 20, 25, 30]
-                },
-                'HDBSCAN': {min_cluster_size = [5, 10, 15, 20, 25, 30]
+                'HDBSCAN': {"min_cluster_size": [5, 10, 15, 20, 25, 30]
                 },
                 'MeanShift': {'workers': self.workers
                 },
-                'OPTICS': {eps: [range(5,150)]
+                'OPTICS': {'min_samples': [5, 10, 15, 20, 25, 30]
                 },
-                'SpectralBiclustering': {'n_clusters': [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20],
-                                         'method': ('bistochastic', 'scale', 'log'),
-                                         'n_components': [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20],
-                                         'n_best': [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20],
-                },
-                'SpectralCoclustering': {'n_clusters': [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20]
-                },
-                'AffinityProp': {'none': None
-                },
-                'Birch': {'n_clust'BisectingKmeans'ers': [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20],
+                'Birch': {'n_clusters': [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20],
                           'threshold': [.1, .2, .3, .5, .7, .8, .9]
                 },
                 'BisectingKmeans': {'k_means_alg': ('lloyd', 'elkan'),
@@ -106,7 +88,6 @@ class clustering():
         return clustering_params[cluster_alg]
 
     def generate_clustering(self):
-
         for alg in self.clustering_methods:
             ctg_matrices_path = self.base_path + alg + '/ctg_matrices'  
             visualizations_path = self.base_path + alg + '/visualizations' 
@@ -120,73 +101,82 @@ class clustering():
 
     def generate_kmeans(self, hyperparams):
         outpath = self.base_path + "kmeans/"
-        for alg in hyper_params['k_means_alg']:
-            for num_clust in hyper_params['n_clusters']:
+        for alg in hyperparams['k_means_alg']:
+            for num_clust in hyperparams['n_clusters']:
                 clustering = KMeans(n_clusters=num_clust, algorithm=alg)
-                cluster_evaluation(alg, (alg, num_clus), clustering) 
+                cluster_evaluation('kmeans', (alg, num_clust), clustering) 
 
     def generate_spectral(self, hyperparams):
         outpath = self.base_path + "spectral/"
-        for alg in hyper_params['assign_labels']:
-            for num_clust in hyper_params['n_clusters']:
+        for alg in hyperparams['assign_labels']:
+            for num_clust in hyperparams['n_clusters']:
                 clustering = SpectralClustering(n_clusters=num_clust, assign_labels=alg)
-                cluster_evaluation(alg, (alg, num_clus), clustering) 
+                cluster_evaluation('spectral', (alg, num_clust), clustering) 
 
     def generate_agglomerative(self, hyperparams):
         outpath = self.base_path + "agglomerative/"
-        for alg in hyper_params['linkage']:
-            for metric in hyper_params['metric']:
+        for alg in hyperparams['linkage']:
+            for metric in hyperparams['metric']:
                 if alg == 'ward' and metric != 'euclidean':
                     continue
                 
-                for num_clust in hyper_params['n_clusters']:
+                for num_clust in hyperparams['n_clusters']:
                     clustering = AgglomerativeClustering(n_clusters=num_clust, assign_labels=alg)
-                    cluster_evaluation(alg, (alg, num_clus), clustering)
-
+                    cluster_evaluation('agglomerative', (alg, metric, num_clust), clustering)
 
     def generate_labelprop(self, hyperparams):
+        outpath = self.base_path + "labelprop/"
+        for kernel in hyperparams['kernel']:
+            if kernel ==  'rbf':
+                for gamma in hyperparams['gamma']:
+                    clustering = LabelPropagation(kernel=kernel, gamma=gamma, n_jobs=hyperparams['workers'])
+                    cluster_evaluation('labelprop', (kernel, gamma), clustering)
 
-        return 0
-
-    def generate_featureagglomeration(self, hyperparams):
-
-        return 0
+            elif kernel == 'knn':
+                for num_neighs in hyperparams['n_neighbors']:
+                    clustering = LabelPropagation(kernel=kernel, n_neighbors=num_neighs, n_jobs=hyperparams['workers'])
+                    cluster_evaluation('labelprop', (kernel, num_clust), clustering)
 
     def generate_dbscan(self, hyperparams):
+        outpath = self.base_path + "dbscan/"
+        for min_samps in hyperparams['min_samples']:
+            for eps in hyperparams['eps']:
+                clustering = DBSCAN(eps=eps/100, min_samples=min_samps)
+                cluster_evaluation('dbscan', (eps, min_samps), clustering) 
 
-        return 0
 
     def generate_hdbscan(self, hyperparams):
-
-        return 0
+        outpath = self.base_path + "hdbscan/"
+        for min_size in hyperparams['min_cluster_size']:
+            clustering = HDBSCAN(min_cluster_size=min_size)
+            cluster_evaluation('hdbscan', (min_size), clustering)         
 
     def generate_meanshift(self, hyperparams):
-
-        return 0
+        outpath = self.base_path + "meanshift/"
+        clustering = MeanShift(n_jobs=hyperparams)
+        cluster_evaluation('meanshift', ("no params"), clustering)  
+    
 
     def generate_optics(self, hyperparams):
-
-        return 0
-
-    def generate_spectralbiclustering(self, hyperparams):
-
-        return 0
-
-    def generate_coclustering(self, hyperparams):
-
-        return 0
-
-    def generate_affinityprop(self, hyperparams):
-
-        return 0
+        outpath = self.base_path + "optics/"
+        for min_samps in hyperparams['min_samples']:
+            clustering = OPTICS(min_samples=min_samps)
+            cluster_evaluation('optics', (min_samps), clustering)
 
     def generate_birch(self, hyperparams):
-
-        return 0
+        outpath = self.base_path + "birch/"
+        for thresh in hyperparams['threshold']:
+            for n_clusts in hyperparams['n_clusters']:
+                clustering = Birch(threshold=thresh, n_clusters=n_clusts)
+                cluster_evaluation('birch', (n_clusts, thresh), clustering) 
 
     def generate_bisectingkmeans(self, hyperparams):
-
-        return 0
+        outpath = self.base_path + "bisectingkmeans/"
+        for alg in hyperparams['k_means_alg']:
+            for strat in hyperparams['bisecting_strategy']:
+                for n_clusts in hyperparams['n_clusters']:
+                    clustering = BisectingKMeans(n_clusters=n_clusts, algorithm=alg, bisecting_strategy=strat)
+                    cluster_evaluation('bisectingkmeans', (n_clusts, alg, strat), clustering)   
 
     def cluster_evaluation(self, alg, hyperparameters, model):
 
@@ -199,7 +189,13 @@ class clustering():
         avg_test_acc = np.average(cv_res['test_score'])
         avg_fit_time = np.average(cv_res['fit_time'])
 
-        labels_pred = model.fit_predict(self.test_data)
+        if alg=='labelprop':
+            model.fit(self.train_data, self.train_labels)
+            labels_pred = model.predict(self.test_data)
+
+        else:
+            labels_pred = model.fit_predict(self.test_data)
+        
         labels_true = self.test_labels
 
         test_set_acc = accuracy_score(labels_pred, labels_true)
