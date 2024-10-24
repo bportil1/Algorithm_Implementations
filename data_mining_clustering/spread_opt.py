@@ -5,12 +5,15 @@ from math import isclose
 from math import ceil
 
 class aew():
-    def __init__(self, data_graph, data):
+    def __init__(self, data_graph, data, test_graph, test_data, precomputed_gamma=None):
 
-        self.similarity_matrix = similarity_matrix = np.zeros((train_data_graph.shape[0], train_data_graph.shape[0]))
-        self.gamma = np.ones(train_data.loc[[0]].shape[1])
+        self.similarity_matrix = np.zeros((data_graph.shape[0], data_graph.shape[0]))
+        self.gamma = precomputed_gamma
         self.data_graph = data_graph
         self.data = data
+
+        if precomputed_gamma == None:
+            self.gamma = np.ones(data.loc[[0]].shape[1])
 
     def normalization_computation(self, section):
         res = []
@@ -36,7 +39,7 @@ class aew():
 
         del edge_weights, edge_weight_res
 
-    def laplacian_normalization(self):
+    def laplacian_normalization(self, data_type):
         print("Normalizing Edge Weights")
 
         divisor = ceil(len(self.similarity_matrix[0]) / 32)
@@ -200,7 +203,7 @@ class aew():
 
         generate_edge_weights()
 
-    def edge_weight_computation(section):
+    def edge_weight_computation(self, section):
 
         res = []
 
@@ -229,15 +232,19 @@ class aew():
 
         for section in edge_weights:
             for weight in section:
-                self.similarity_matrix[weight[0]][weight[1]] = weight[2]
+                self.similarity_matrix_temp[weight[0]][weight[1]] = weight[2]
 
         laplacian_normalization()
+
+        rewrite_edges()
+
+        self.data_graph = self.data_graph.toarray()
 
         print("Edge Weight Generation Complete")
 
     def rewrite_edges(self):
 
-        rows, cols = graph.nonzero()
+        rows, cols = self.data_graph.nonzero()
 
         for idx in range(len(rows)):
             row = rows[idx]

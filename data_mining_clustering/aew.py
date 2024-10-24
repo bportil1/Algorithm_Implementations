@@ -166,9 +166,9 @@ def rewrite_edges(graph, weights):
 
 
 if __name__ == '__main__':
-    #ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
+    ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
 
-    ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
+    #ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
 
     data_obj = data()
 
@@ -192,8 +192,53 @@ if __name__ == '__main__':
 
     os.makedirs(init_path, exist_ok=True)
 
-    data_obj.lower_dimensional_embedding(data_obj.train_data, data_obj.train_labels, 3, 'Original Data: 3-Dimensions', init_path)
+    data_obj.lower_dimensional_embedding('train', 'Original Train Data: 3-Dimensions', init_path)
 
+    data_obj.lower_dimensional_embedding('test', 'Original Test Data: 3-Dimensions', init_path)
+
+    init_path = './results/orig_data_visualization/graphs/'
+
+    os.makedirs(init_path, exist_ok=True)
+
+    data_obj.lower_dimensional_embedding('train', 'Original Train Data: 3-Dimensions', init_path, 'graph')
+
+    data_obj.lower_dimensional_embedding('test', 'Original Test Data: 3-Dimensions', init_path, 'graph')
+
+    data_obj.generate_graphs('train')
+
+    data_obj.generate_graphs('test')
+
+    aew_train = aew(data_obj.train_graph, data_obj.train_data)
+
+    aew_train.generate_optimal_edge_weights(7)
+
+    aew_test = aew(data_obj.test_graph, data_obj.test_data, aew_train.gamma)
+
+    aew_test.generate_edge_weights()
+
+    num_components = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 25, 30, 35, 40]
+
+    for num_comp in num_components
+
+        print("Current number of components: ", num_com)
+
+        data_obj.train_projection, _ = data_obj.downsize_data('train', num_comp)
+
+        data_obj.test_projection, _ = data_obj.downsize_data('test', num_comp)
+
+        init_path = './results/orig_data_visualization/num_comp_' + str(num_comp) + '/'
+
+        os.makedirs(init_path, exist_ok=True)
+
+        data_obj.lower_dimensional_embedding('train', 'Train Mappings Base: 3-Dimensions', init_path, proj=True)
+
+        data_obj.lower_dimensional_embedding('test', 'Test Mappings Base: 3-Dimensions', init_path, proj=True)
+
+        clustering = clustering(data_obj.train_projection, data_obj.train_labels,
+                                data_obj.test_data, data_obj.test_labels,
+                                workers = -1)
+
+        clustering.generate_clustering()
 
     '''
     train_data, train_labels, test_data, test_labels = preprocess_ids_data

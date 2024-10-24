@@ -227,7 +227,7 @@ class clustering():
              'V_meas' : v_meas, 'FMs' : fowlkes_mallows}
         df = pd.DataFrame.from_dict(d)
         
-        filename_base = '/alg'
+        filename_base = 'results/alg'
 
         for hyper_param in hyperparameters:
 
@@ -246,17 +246,4 @@ class clustering():
         data_obj = data()
 
         data.lower_dimensional_embedding(self.test_data, labels_pred, filename_base, vis_file_name)
-
-    def estimate_node_labels(train_data, train_labels, test_data, test_labels):
-
-        label_prop_model = LabelPropagation(n_jobs=-1)
-
-        label_prop_model.fit(train_data, train_labels)
-
-        data_predict = label_prop_model.score(test_data, test_labels)
-
-        print("LabelProp Accuracy: ", data_predict)
-
-        return data_predict
-
 

@@ -19,9 +19,11 @@ class data():
         self.train_data = train_data
         self.train_graph = None
         self.train_labels = train_labels
+        self.train_projection = None
         self.test_data = pd.DataFrame()
         self.test_graph = None
         self.test_labels = test_labels
+        self.test_projection = None
 
     def scale_data(self, scaling):
         if scaling == 'standard':
@@ -103,7 +105,14 @@ class data():
                 out_dict[key] = value
             return out_dict
 
-    def downsize_data(self, data, labels, num_components):
+    def downsize_data(self, data_type, num_components):
+        if data_type == 'train':
+            data = self.train_graph
+            labels = self.train_labels
+        elif data_type == 'test':
+            data = self.test_graph
+            labels = self.test_labels
+
         embeddings = self.get_embeddings(num_components)
 
         projections, timing = {}, {}
@@ -116,14 +125,34 @@ class data():
         return projections, timing 
 
     def generate_graphs(self, data_type):
-        return kneighbors_graph(data_type, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
+        if data_type == 'train':
+            self.train_graph = kneighbors_graph(self.train_data, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
+        elif data_type == 'test':
+            self.test_graph = kneighbors_graph(self.test_data, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
 
-    def lower_dimensional_embedding(self, data, labels, num_dims, passed_title, path):
-        embeddings = self.get_embeddings(num_dims)
-        projections, timing = self.downsize_data(data, labels, num_dims) 
+    def lower_dimensional_embedding(self, data_type, passed_title, path, mapping = ''):
+        if data_type == 'train':
+            if mapping == 'proj':
+                data = self.train_projection
+            elif mapping == 'graph':
+                data = self.train_graph
+            else:
+                data = self.train_data
+            labels = self.train_labels
+        elif data_type == 'test':
+            if mapping == 'proj':
+                data = self.train_projection
+            elif mapping == 'graph':
+                data = self.train_graph
+            else:
+                data = self.test_data 
+            labels = self.test_labels
+
+        embeddings = self.get_embeddings(3)
+        projections, timing = self.downsize_data(data, 'train', 3) 
         
         for name in timing:
-            title = f"{name} (time {timing[name]:.3f}s  {passed_title} {projections[name]} )"
+            title = f"{name} (time {timing[name]:.3f}s  {passed_title})"
             file_path = str(path) + str(name) + '.html'
             self.plot_embedding(projections[name], labels, title, file_path)
 
@@ -145,7 +174,7 @@ class data():
                 title = title
             )
 
-        fig.write_html(path)
+        fig.write_html(path, div_id = title)
         #fig.show()
 
 def preprocess_ids_data():
