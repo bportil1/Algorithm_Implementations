@@ -29,7 +29,7 @@ class aew():
 
     def normalization_parallel_caller(self, split_data):
         with Pool(processes=cpu_count()) as pool:
-            edge_weight_res = [pool.apply_async(self.normalization_computation, (self.similarity_matrix, section)) for section in split_data]
+            edge_weight_res = [pool.apply_async(self.normalization_computation, (section, )) for section in split_data]
 
             edge_weights = [edge_weight.get() for edge_weight in edge_weight_res]
 
@@ -39,7 +39,7 @@ class aew():
 
         del edge_weights, edge_weight_res
 
-    def laplacian_normalization(self, data_type):
+    def laplacian_normalization(self):
         print("Normalizing Edge Weights")
 
         divisor = ceil(len(self.similarity_matrix[0]) / 32)
@@ -66,7 +66,6 @@ class aew():
             curr_start = curr_end
 
         print("Finished Normalizing Edge Weights")
-        return similarity_matrix
 
     def similarity_function(self, pt1_idx, pt2_idx):
         point1 = np.asarray(self.data.loc[[pt1_idx]])
@@ -224,7 +223,7 @@ class aew():
         split_data = self.split(range(self.data_graph.shape[0]), cpu_count())
 
         with Pool(processes=cpu_count()) as pool:
-            edge_weight_res = [pool.apply_async(self.edge_weight_computation, (section)) for section in split_data]
+            edge_weight_res = [pool.apply_async(self.edge_weight_computation, (section, )) for section in split_data]
 
             edge_weights = [edge_weight.get() for edge_weight in edge_weight_res]
 
