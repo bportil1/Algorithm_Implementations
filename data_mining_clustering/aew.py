@@ -210,7 +210,7 @@ if __name__ == '__main__':
 
     aew_train = aew(data_obj.train_graph, data_obj.train_data)
 
-    aew_train.generate_optimal_edge_weights(7)
+    aew_train.generate_optimal_edge_weights(3)
 
     aew_test = aew(data_obj.test_graph, data_obj.test_data, aew_train.gamma)
 

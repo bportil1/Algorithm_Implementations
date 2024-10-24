@@ -55,7 +55,7 @@ class data():
     def load_data(self, datapath, data_type):
         if data_type == 'train':
             self.train_data = pd.read_csv(datapath)
-            self.train_data = self.train_data.head(10000)
+            self.train_data = self.train_data.head(1000)
         elif data_type == 'test':
             self.test_data = pd.read_csv(datapath)
 

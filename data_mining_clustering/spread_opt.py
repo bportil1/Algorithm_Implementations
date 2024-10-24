@@ -110,7 +110,7 @@ class aew():
             errors = [pool.apply_async(self.objective_computation, (section, )) \
                                                                  for section in split_data]
 
-        error = [error.get() for error in errors]
+            error = [error.get() for error in errors]
         return np.sum(error)
 
     def gradient_computation(self, section):
