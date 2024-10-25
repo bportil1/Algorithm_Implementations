@@ -24,6 +24,7 @@ class data():
         self.test_graph = None
         self.test_labels = test_labels
         self.test_projection = None
+        self.class_labels = {'class': {'normal': 0, 'anomaly':1}}
 
     def scale_data(self, scaling):
         if scaling == 'standard':
@@ -47,9 +48,8 @@ class data():
             self.train_data[column_name] = label_encoder.transform(self.train_data[column_name])
             self.test_data[column_name] = label_encoder.transform(self.test_data[column_name])
         elif target_set == 'labels':
-            label_encoder.fit(list(self.train_labels[column_name])+list(self.test_labels[column_name])) 
-            self.train_labels[column_name] = label_encoder.transform(self.train_labels[column_name])
-            self.test_labels[column_name] = label_encoder.transform(self.test_labels[column_name])
+            self.train_labels = self.train_labels.replace(self.class_labels)
+            self.test_labels = self.test_labels.replace(self.class_labels)
 
     def load_data(self, datapath, data_type):
         if data_type == 'train':
@@ -172,57 +172,3 @@ class data():
 
         fig.write_html(path, div_id = title)
         #fig.show()
-
-def preprocess_ids_data():
-    #ds_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
-
-    ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
-
-    #ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Test_data.csv'
-
-    ids_train_data = pd.read_csv(ids_train_file)
-
-    label_encoder = LabelEncoder()
-
-    ids_train_data['protocol_type'] = label_encoder.fit_transform(ids_train_data['protocol_type'])
-
-    ids_train_data['service'] = label_encoder.fit_transform(ids_train_data['service'])
-
-    ids_train_data['flag'] = label_encoder.fit_transform(ids_train_data['flag'])
-
-    ids_train_data = ids_train_data.sample(frac=1)
-
-    train_set, test_set = train_test_split(ids_train_data, test_size = .2)
-
-    train_set = train_set.reset_index(drop=True)
-
-    test_set = test_set.reset_index(drop=True)
-
-    train_data = train_set.loc[:, train_set.columns != 'class']
-
-    train_labels = train_set[['class']].copy()
-
-    train_labels['class'].replace(['normal', 'anomaly'], [0,1], inplace=True)
-
-    train_labels.reset_index(inplace=True)
-
-    #train_labels = train_labels.values.tolist()
-    
-    #train_labels = flatten_list(train_labels)
-
-    test_data = test_set.loc[:, test_set.columns != 'class']
-
-    test_labels = test_set[['class']].copy()
-
-    test_labels['class'].replace(['normal', 'anomaly'], [0,1], inplace=True)
-
-    test_labels.reset_index(inplace=True)
-
-    #test_labels = test_labels.values.tolist()
-
-    #test_labels = flatten_list(test_labels)
-
-    #return train_data.head(500), train_labels.head(500), test_data.head(200), test_labels.head(200)
-
-    return train_data, train_labels, test_data, test_labels
-

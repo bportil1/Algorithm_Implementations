@@ -21,7 +21,7 @@ from preprocessing_utils import *
 
 
 class clustering():
-    def __init__(self, train_data, train_labels, test_data, test_labels, clustering_methods=None, workers = 1):
+    def __init__(self, train_data, train_labels, test_data, test_labels, projection_type, clustering_methods=None, workers = 1):
         self.train_data = train_data
         self.train_labels = train_labels
         self.test_data = test_data
@@ -29,6 +29,7 @@ class clustering():
         self.base_path = './results/'
         self.clustering_methods = clustering_methods
         self.clustering_funcs = None
+        self.projection_type = projection_type
         self.workers = workers
         
         if clustering_methods == None:
@@ -40,7 +41,7 @@ class clustering():
         self.clustering_methods = ['Kmeans',
                                    'Spectral', 
                                    'Agglomerative',
-                                   'LabelProp',
+                                   #'LabelProp',
                                    #'DBSCAN', 
                                    'HDBSCAN', 
                                    'MeanShift',
@@ -55,7 +56,7 @@ class clustering():
                 'Kmeans': self.generate_kmeans(self.get_clustering_hyperparams('Kmeans')),
                 'Spectral': self.generate_spectral(self.get_clustering_hyperparams('Spectral')),
                 'Agglomerative': self.generate_agglomerative(self.get_clustering_hyperparams('Agglomerative')),
-                'LabelProp': self.generate_labelprop(self.get_clustering_hyperparams('LabelProp')),
+                #'LabelProp': self.generate_labelprop(self.get_clustering_hyperparams('LabelProp')),
                 #'DBSCAN': self.generate_dbscan(self.get_clustering_hyperparams('DBSCAN')),
                 'HDBSCAN': self.generate_hdbscan(self.get_clustering_hyperparams('HDBSCAN')),
                 'MeanShift': self.generate_meanshift(self.get_clustering_hyperparams('MeanShift')),
@@ -105,7 +106,6 @@ class clustering():
 
     def generate_clustering(self):
         for alg in self.clustering_methods:
-            print("Processing Clustering Alg: ", alg)
             ctg_matrices_path = self.base_path + alg + '/ctg_matrices'  
             visualizations_path = self.base_path + alg + '/visualizations' 
             results_path = self.base_path + alg + '/results' 
@@ -117,6 +117,7 @@ class clustering():
             clustering = self.clustering_funcs[alg]
 
     def generate_kmeans(self, hyperparams):
+        print("Computing Kmeans")
         outpath = self.base_path + "kmeans/"
         for alg in hyperparams['k_means_alg']:
             for num_clust in hyperparams['n_clusters']:
@@ -124,13 +125,15 @@ class clustering():
                 self.cluster_evaluation('kmeans', (alg, num_clust), clustering) 
 
     def generate_spectral(self, hyperparams):
+        print("Computing Spectral")
         outpath = self.base_path + "spectral/"
         for alg in hyperparams['assign_labels']:
             for num_clust in hyperparams['n_clusters']:
-                clustering = SpectralClustering(n_clusters=num_clust, assign_labels=alg)
+                clustering = SpectralClustering(n_clusters=num_clust, assign_labels=alg, n_jobs=hyperparams['workers'])
                 self.cluster_evaluation('spectral', (alg, num_clust), clustering) 
 
     def generate_agglomerative(self, hyperparams):
+        print("Computing Agglomerative")
         outpath = self.base_path + "agglomerative/"
         for alg in hyperparams['linkage']:
             for metric in hyperparams['metric']:
@@ -142,6 +145,7 @@ class clustering():
                     self.cluster_evaluation('agglomerative', (alg, metric, num_clust), clustering)
 
     def generate_labelprop(self, hyperparams):
+        print("Computing Labelprop")
         outpath = self.base_path + "labelprop/"
         for kernel in hyperparams['kernel']:
             if kernel ==  'rbf':
@@ -155,6 +159,7 @@ class clustering():
                     self.cluster_evaluation('labelprop', (kernel, num_neighs), clustering)
 
     def generate_dbscan(self, hyperparams):
+        print("Computing DBSCAN")
         outpath = self.base_path + "dbscan/"
         for min_samps in hyperparams['min_samples']:
             for eps in hyperparams['eps']:
@@ -162,23 +167,27 @@ class clustering():
                 self.cluster_evaluation('dbscan', (eps, min_samps), clustering) 
 
     def generate_hdbscan(self, hyperparams):
+        print("Computing HDBSCAN")
         outpath = self.base_path + "hdbscan/"
         for min_size in hyperparams['min_cluster_size']:
             clustering = HDBSCAN(min_cluster_size=min_size)
             self.cluster_evaluation('hdbscan', [min_size], clustering)         
 
     def generate_meanshift(self, hyperparams):
+        print("Computing MeanShift")
         outpath = self.base_path + "meanshift/"
         clustering = MeanShift(n_jobs=hyperparams['workers'])
         self.cluster_evaluation('meanshift', ["no params"], clustering)  
 
     def generate_optics(self, hyperparams):
+        print("Computing OPTICS")
         outpath = self.base_path + "optics/"
         for min_samps in hyperparams['min_samples']:
             clustering = OPTICS(min_samples=min_samps)
             self.cluster_evaluation('optics', [min_samps], clustering)
 
     def generate_birch(self, hyperparams):
+        print("Computing Birch")
         outpath = self.base_path + "birch/"
         for thresh in hyperparams['threshold']:
             for n_clusts in hyperparams['n_clusters']:
@@ -186,6 +195,7 @@ class clustering():
                 self.cluster_evaluation('birch', (n_clusts, thresh), clustering) 
 
     def generate_bisectingkmeans(self, hyperparams):
+        print("Computing BisectingKmeans")
         outpath = self.base_path + "bisectingkmeans/"
         for alg in hyperparams['k_means_alg']:
             for strat in hyperparams['bisecting_strategy']:
@@ -202,11 +212,6 @@ class clustering():
         os.makedirs(ctg_matrices_path, exist_ok=True)
         os.makedirs(visualizations_path, exist_ok=True)
         os.makedirs(results_path, exist_ok=True)
-
-
-        #print(ctg_matrices_path)
-        #print(visualizations_path)
-        #print(results_path)
 
         if alg in ('spectral', 'agglomerative', 'dbscan',
                    'hdbscan', 'meanshift', 'optics',
@@ -269,17 +274,13 @@ class clustering():
 
         cntg_mtx_name = ctg_matrices_path + filename_base + ".csv"
 
-        #print(cntg_mtx_name)
-
         f = open(cntg_mtx_name, 'a')
 
         f.close()
 
         np.savetxt(cntg_mtx_name, cntg_mtx, delimiter=',', fmt='%d')
 
-        results_file_name = results_path + filename_base + ".csv"
-
-        #print(results_file_name)
+        results_file_name = results_path + filename_base + "_" + self.projection_type  +".csv"
 
         f = open(results_file_name, 'a')
 
@@ -288,10 +289,6 @@ class clustering():
         df.to_csv(results_file_name, index=False)
 
         vis_file_name = visualizations_path + filename_base + ".html"
-
-        #print(vis_file_name)
-
-        #print(labels_pred)
 
         labels_pred = pd.DataFrame(labels_pred, columns=['class'])
 

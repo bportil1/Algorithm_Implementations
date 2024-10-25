@@ -92,7 +92,7 @@ class aew():
             for vertex in self.data_graph.indices[points]:
                 wij = self.similarity_function(idx, vertex)
                 dii += wij
-                temp_sum = wij * np.asarray(self.data.loc[[vertex]])
+                temp_sum = temp_sum + (wij * np.asarray(self.data.loc[[vertex]]))
             if dii > 0 and not isclose(dii, 0, abs_tol=1e-9):
                 temp_sum /= dii
             else:
@@ -113,7 +113,7 @@ class aew():
         return np.sum(error)
 
     def gradient_computation(self, section):
-        gradient = 0
+        gradient = np.zeros(len(self.gamma))
         for idx in section:
             #print(idx)
             points = slice(self.data_graph.indptr[idx], self.data_graph.indptr[idx+1])
@@ -122,23 +122,29 @@ class aew():
             sec_term_1 = 0
             sec_term_2 = np.zeros(self.data.loc[[0]].shape[1])
 
+            gradient_vector = np.zeros(len(self.gamma)) 
+
+            #print(len(gradient_vector))
+
             point1 = np.asarray(self.data.loc[[idx]])
             for vertex in self.data_graph.indices[points]:
                 point2 = np.asarray(self.data.loc[[vertex]])
-                wij = self.similarity_function(idx, vertex)
+                wij = self.similarity_function(idx, vertex)                
                 dii += wij
-                x_hat += wij*self.data.loc[[vertex]].to_numpy()[0]
-                dW_vals = self.dW_dsigma(point1, point2, idx, vertex)
-                sec_term_1 += dW_vals* self.data.loc[[vertex]].to_numpy()[0]
-                sec_term_2 = sec_term_2 + dW_vals
+                for feature_idx in range(len(self.gamma)):
+                    diff = np.abs(point1[0][feature_idx] - point2[0][feature_idx])**2
+                    gamma_term = self.gamma[feature_idx]**(-3)
+                    gradient_vector[feature_idx] = diff * gamma_term * 2 * wij        
+                x_hat = x_hat + (wij * point2)    
             if dii > 0 and not isclose(dii, 0, abs_tol=1e-9):
                 x_hat = np.divide(x_hat, dii, casting='unsafe', dtype=np.longdouble)
                 leading_term_2 = np.divide((self.data.loc[[idx]].to_numpy()[0] - x_hat), dii, casting='unsafe', dtype=np.longdouble)
             else:
                 x_hat = 0
                 leading_term_2 = np.zeros(len(point2[0]))
-            sec_term_2 = sec_term_2 * x_hat
-            gradient = gradient + (leading_term_2.T * (sec_term_1 - sec_term_2))
+            sec_term_1 = np.multiply(gradient_vector, point2)
+            sec_term_2 = np.multiply(gradient_vector, x_hat)
+            gradient = gradient + (leading_term_2[0].transpose().tolist() * (sec_term_1[0] - sec_term_2[0]))
         return gradient
 
     def split(self, a, n):
@@ -159,6 +165,7 @@ class aew():
         gradient = np.zeros(self.data.loc[[0]].shape[1])
         for grad in gradients:
             gradient = gradient + grad
+
         return gradient
 
     def dW_dsigma(self, point1, point2, pt1_idx, pt2_idx):
@@ -190,8 +197,8 @@ class aew():
             if curr_error < tol:
                 break
             print("Gamma: ", self.gamma)
-            self.gamma = self.gamma - (gradient * learning_rate)
-            self.gamma = self.gamma[0]
+            self.gamma = self.gamma + (gradient * learning_rate)
+            self.gamma = self.gamma
             print("Updated Gamma: ", self.gamma)
         print("Completed Gradient Descent")
 
