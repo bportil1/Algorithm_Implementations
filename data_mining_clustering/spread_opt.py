@@ -1,18 +1,19 @@
 import numpy as np
+import pandas as pd
 from multiprocessing import Pool
 from multiprocessing import cpu_count
 from math import isclose
 from math import ceil
 
 class aew():
-    def __init__(self, data_graph, data, precomputed_gamma=None):
+    def __init__(self, data_graph, data, precomputed_gamma=np.empty((0,0))):
 
         self.similarity_matrix = np.zeros((data_graph.shape[0], data_graph.shape[0]))
         self.gamma = precomputed_gamma
         self.data_graph = data_graph
         self.data = data
 
-        if precomputed_gamma == None:
+        if self.gamma.shape == (0,0):
             self.gamma = np.ones(self.data.loc[[0]].shape[1])
 
     def normalization_computation(self, section):
@@ -55,11 +56,11 @@ class aew():
             else:
                 curr_end = len(self.similarity_matrix[0])
 
-            print(idx, " ", curr_start, " ", curr_end)
+            #print(idx, " ", curr_start, " ", curr_end)
 
             split_data = self.split(range(curr_start, curr_end), cpu_count())
     
-            print(split_data)
+            #print(split_data)
 
             self.normalization_parallel_caller(split_data)
 
@@ -75,7 +76,6 @@ class aew():
 
         for feature in range(len(point2[0])):
             temp_res += (point1[0][feature] - point2[0][feature]) ** 2 / (self.gamma[feature]) ** 2
-
 
         ##### this exponent op is rarely returing an overflow, not sure the type of value thats causing it, seems stable up to 5 iterations
         #print(temp_res)

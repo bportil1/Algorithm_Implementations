@@ -4,7 +4,6 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.decomposition import TruncatedSVD
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.ensemble import RandomTreesEmbedding
 from sklearn.manifold import (
     TSNE,
@@ -55,7 +54,7 @@ class data():
     def load_data(self, datapath, data_type):
         if data_type == 'train':
             self.train_data = pd.read_csv(datapath)
-            self.train_data = self.train_data.head(1000)
+            self.train_data = self.train_data.head(500)
         elif data_type == 'test':
             self.test_data = pd.read_csv(datapath)
 
@@ -135,26 +134,14 @@ class data():
 
     def generate_graphs(self, data_type):
         if data_type == 'train':
-            self.train_graph = kneighbors_graph(self.train_data, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
+            self.train_graph = kneighbors_graph(self.train_data, n_neighbors=50, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
         elif data_type == 'test':
-            self.test_graph = kneighbors_graph(self.test_data, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
+            self.test_graph = kneighbors_graph(self.test_data, n_neighbors=50, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
 
-    def lower_dimensional_embedding(self, data, data_type, passed_title, path, mapping = ''):
+    def lower_dimensional_embedding(self, data, data_type, passed_title, path):
         if data_type == 'train':
-            #f mapping == 'proj':
-            #   data = self.train_projection
-            #lif mapping == 'graph':
-            #   data = self.train_graph
-            #lse:
-            #   data = self.train_data
             labels = self.train_labels
-        elif data_type == 'test':
-            #f mapping == 'proj':
-            #   data = self.train_projection
-            #lif mapping == 'graph':
-            #   data = self.train_graph
-            #lse:
-            #   data = self.test_data 
+        elif data_type == 'test': 
             labels = self.test_labels
 
         embeddings = self.get_embeddings(3)
