@@ -69,6 +69,11 @@ class aew():
 
         print("Finished Normalizing Edge Weights")
 
+    def collect_degree(self, idx):
+        points = slice(self.data_graph.indptr[idx], self.data_graph.indptr[idx+1])
+        return len(self.data_graph.indices[points])
+        
+
     def similarity_function(self, pt1_idx, pt2_idx):
         point1 = np.asarray(self.data.loc[[pt1_idx]])
         point2 = np.asarray(self.data.loc[[pt2_idx]])
@@ -77,11 +82,20 @@ class aew():
 
         for feature in range(len(point2[0])):
             temp_res += (point1[0][feature] - point2[0][feature]) ** 2 / (self.gamma[feature]) ** 2
+        wij = np.exp(-temp_res, dtype=np.longdouble)
+
+        denom = np.sqrt(self.collect_degree(pt1_idx)*self.collect_degree(pt2_idx))
+
+        if denom > 0 and not isclose(denom, 0, abs_tol=1e-20):
+            #print (-(wij/denom))
+            return -(wij/denom)
+        else:
+            return 0
 
         ##### this exponent op is rarely returing an overflow, not sure the type of value thats causing it, seems stable up to 5 iterations
         #print(temp_res)
 
-        return np.exp(-temp_res, dtype=np.longdouble)
+        #return np.exp(-temp_res, dtype=np.longdouble)
 
     def objective_computation(self, section):
         approx_error = 0
@@ -240,7 +254,7 @@ class aew():
             for weight in section:
                 self.similarity_matrix[weight[0]][weight[1]] = weight[2]
 
-        self.laplacian_normalization()
+        #self.laplacian_normalization()
 
         self.rewrite_edges()
 
