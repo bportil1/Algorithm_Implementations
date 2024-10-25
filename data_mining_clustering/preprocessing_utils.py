@@ -54,7 +54,7 @@ class data():
     def load_data(self, datapath, data_type):
         if data_type == 'train':
             self.train_data = pd.read_csv(datapath)
-            self.train_data = self.train_data.head(500)
+            self.train_data = self.train_data.head(5000)
         elif data_type == 'test':
             self.test_data = pd.read_csv(datapath)
 
@@ -134,9 +134,9 @@ class data():
 
     def generate_graphs(self, data_type):
         if data_type == 'train':
-            self.train_graph = kneighbors_graph(self.train_data, n_neighbors=50, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
+            self.train_graph = kneighbors_graph(self.train_data, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
         elif data_type == 'test':
-            self.test_graph = kneighbors_graph(self.test_data, n_neighbors=50, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
+            self.test_graph = kneighbors_graph(self.test_data, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
 
     def lower_dimensional_embedding(self, data, data_type, passed_title, path):
         if data_type == 'train':

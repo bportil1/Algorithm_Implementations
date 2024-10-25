@@ -204,9 +204,9 @@ class clustering():
         os.makedirs(results_path, exist_ok=True)
 
 
-        print(ctg_matrices_path)
-        print(visualizations_path)
-        print(results_path)
+        #print(ctg_matrices_path)
+        #print(visualizations_path)
+        #print(results_path)
 
         if alg in ('spectral', 'agglomerative', 'dbscan',
                    'hdbscan', 'meanshift', 'optics',

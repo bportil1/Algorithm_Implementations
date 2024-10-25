@@ -168,9 +168,9 @@ def rewrite_edges(graph, weights):
 if __name__ == '__main__':
     #ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
 
-    #ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
+    ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
 
-    ids_train_file = '/home/bryanportillo_lt/Documents/py_env/venv/network_intrusion_dataset/Train_data.csv'
+    #ids_train_file = '/home/bryanportillo_lt/Documents/py_env/venv/network_intrusion_dataset/Train_data.csv'
 
     data_obj = data()
 
@@ -212,7 +212,7 @@ if __name__ == '__main__':
 
     aew_train = aew(data_obj.train_graph, data_obj.train_data)
 
-    aew_train.generate_optimal_edge_weights(0)
+    aew_train.generate_optimal_edge_weights(10)
 
     aew_test = aew(data_obj.test_graph, data_obj.test_data, aew_train.gamma)
 
