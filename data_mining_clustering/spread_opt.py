@@ -12,6 +12,7 @@ class aew():
         self.gamma = precomputed_gamma
         self.data_graph = data_graph
         self.data = data
+        self.min_error = float('inf')
 
         if self.gamma.shape == (0,0):
             self.gamma = np.ones(self.data.loc[[0]].shape[1])
@@ -194,8 +195,9 @@ class aew():
             print("Computing Error")
             curr_error = self.objective_function()
             print("Current Error: ", curr_error)
-            if curr_error < tol:
+            if (self.min_error < curr_error) or (curr_error < tol):
                 break
+            self.min_error = curr_error
             print("Gamma: ", self.gamma)
             self.gamma = self.gamma + (gradient * learning_rate)
             self.gamma = self.gamma

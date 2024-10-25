@@ -42,7 +42,7 @@ if __name__ == '__main__':
     init_path = './results/plain_data/'
 
     os.makedirs(init_path, exist_ok=True)
-
+    '''
     data_obj.lower_dimensional_embedding(data_obj.train_graph ,'train', 'Original Train Graph: 3-Dimensions', init_path)
 
     data_obj.lower_dimensional_embedding(data_obj.test_graph, 'test', 'Original Test Graph: 3-Dimensions', init_path)
@@ -50,8 +50,10 @@ if __name__ == '__main__':
     plain_clustering = clustering(data_obj.train_data, data_obj.train_labels, data_obj.test_data, data_obj.test_labels, "40_dim_no_proj", workers = -1)
 
     plain_clustering.generate_clustering()
-    
-    aew_train = aew(data_obj.train_graph, data_obj.train_data)
+    '''
+    prec_gamma = np.ones(data_obj.train_data.loc[[0]].shape[1]) * .15 
+
+    aew_train = aew(data_obj.train_graph, data_obj.train_data, prec_gamma)
 
     aew_train.generate_optimal_edge_weights(10)
 
