@@ -5,21 +5,17 @@ from multiprocessing import cpu_count
 from math import isclose
 from math import ceil
 
+from sklearn.decomposition import PCA
+
 class aew():
     def __init__(self, data_graph, data, precomputed_gamma=np.empty((0,0))):
 
-        #print(data_graph.shape[0])
-
         self.similarity_matrix = np.zeros((data_graph.shape[0], data_graph.shape[0]))
-
-        #print("NaNs: ", np.count_nonzero(np.isnan(self.similarity_matrix.size)))
-
-        #print(self.similarity_matrix[0])
-
         self.gamma = precomputed_gamma
         self.data_graph = data_graph
         self.data = data
         self.min_error = float('inf')
+        self.eigenvectors = None
 
         if self.gamma.shape == (0,0):
             self.gamma = np.ones(41)
@@ -38,8 +34,6 @@ class aew():
 
     def normalization_parallel_caller(self, split_data):
 
-        #print("Similarity?: ", (self.similarity_matrix==self.similarity_matrix.T).all())
-
         with Pool(processes=cpu_count()) as pool:
             edge_weight_res = [pool.apply_async(self.normalization_computation, (section, )) for section in split_data]
 
@@ -47,26 +41,16 @@ class aew():
 
         for section in edge_weights:
             for weight in section:
-                #print(weight)
                 self.similarity_matrix[weight[0]][weight[1]] = weight[2]
                 self.similarity_matrix[weight[1]][weight[0]] = weight[2]
         del edge_weights, edge_weight_res
 
-        #print("Similarity?: ", (self.similarity_matrix==self.similarity_matrix.T).all())
-
     def laplacian_normalization(self):
         print("Normalizing Edge Weights")
 
-        print("Similarity?: ", (self.similarity_matrix==self.similarity_matrix.T).all())
-
         divisor = ceil(len(self.similarity_matrix[0]) / 32)
 
-        #fix repeating indices on last section split
-
         curr_start = 0
-
-        #print("NaNs: ", self.similarity_matrix.size - np.count_nonzero(np.isnan(self.similarity_matrix.size)))
-
 
         for idx in range(1, 33):
 
@@ -75,24 +59,13 @@ class aew():
             else:
                 curr_end = len(self.similarity_matrix[0])
 
-            #print(idx, " ", curr_start, " ", curr_end)
-
             split_data = self.split(range(curr_start, curr_end), cpu_count())
     
-            #print(split_data)
-
             self.normalization_parallel_caller(split_data)
 
             curr_start = curr_end
 
-        print("Similarity?: ", (self.similarity_matrix==self.similarity_matrix.T).all())
-
-        print("Finished Normalizing Edge Weights")
-
-    def collect_degree(self, idx):
-        points = slice(self.data_graph.indptr[idx], self.data_graph.indptr[idx+1])
-        return len(self.data_graph.indices[points])
-        
+        print("Finished Normalizing Edge Weights")        
 
     def similarity_function(self, pt1_idx, pt2_idx):
         point1 = np.asarray(self.data.loc[[pt1_idx]])
@@ -120,7 +93,6 @@ class aew():
                 temp_sum /= dii
             else:
                 temp_sum = np.zeros(len(self.gamma))
-            #approx_error += np.sqrt(np.abs(np.asarray(self.data.loc[[idx]])**2 - temp_sum**2))
             approx_error += np.abs((np.asarray(self.data.loc[[idx]]) - temp_sum)**2)
         return np.sqrt(approx_error)
 
@@ -139,7 +111,6 @@ class aew():
     def gradient_computation(self, section):
         gradient = np.zeros(len(self.gamma))
         for idx in section:
-            #print(idx)
             points = slice(self.data_graph.indptr[idx], self.data_graph.indptr[idx+1])
             dii = 0
             x_hat = 0
@@ -147,8 +118,6 @@ class aew():
             sec_term_2 = np.zeros(self.data.loc[[0]].shape[1])
 
             gradient_vector = np.zeros(len(self.gamma)) 
-
-            #print(len(gradient_vector))
 
             point1 = np.asarray(self.data.loc[[idx]])
             for vertex in self.data_graph.indices[points]:
@@ -218,8 +187,7 @@ class aew():
             print("Computing Error")
             curr_error = self.objective_function()
             print("Current Error: ", curr_error)
-            #if (self.min_error < curr_error) or (curr_error < tol):
-            
+                    
             if curr_error < tol:
                 break
                 
@@ -235,7 +203,7 @@ class aew():
             self.gamma = self.gamma + (gradient * learning_rate)
             self.gamma = self.gamma
             print("Updated Gamma: ", self.gamma)
-            #else:
+    
             print("Updated Learning Rate: ", learning_rate)
         print("Completed Gradient Descent")
 
@@ -266,36 +234,27 @@ class aew():
 
         split_data = self.split(range(self.data_graph.shape[0]), cpu_count())
 
-
-        #print("NaNs: ", np.count_nonzero(np.isnan(self.similarity_matrix.size)))
-
-
         with Pool(processes=cpu_count()) as pool:
             edge_weight_res = [pool.apply_async(self.edge_weight_computation, (section, )) for section in split_data]
 
             edge_weights = [edge_weight.get() for edge_weight in edge_weight_res]
 
-        #print("NaNs: ", np.count_nonzero(np.isnan(self.similarity_matrix.size)))
-
         for section in edge_weights:
             for weight in section:
-                #weight[2]
                 self.similarity_matrix[weight[0]][weight[1]] = weight[2]
                 self.similarity_matrix[weight[1]][weight[0]] = weight[2]
 
-        #print("NaNs: ", np.count_nonzero(np.isnan(self.similarity_matrix.size)))
+        self.laplacian_normalization()
 
-        #self.laplacian_normalization()
+        self.subtract_identity()
 
-        #print("NaNs: ", np.count_nonzero(np.isnan(self.similarity_matrix.size)))
+        self.rewrite_edges()
 
-        #self.rewrite_edges()
+        self.subtract_identity()
 
-        #print("NaNs: ", np.count_nonzero(np.isnan(self.similarity_matrix.size)))
+        self.eigenvectors = self.get_eigenvectors(3)
 
         self.data_graph = self.data_graph.toarray()
-
-        #print("NaNs: ", np.count_nonzero(np.isnan(self.similarity_matrix.size)))
 
         print("Edge Weight Generation Complete")
 
@@ -308,5 +267,30 @@ class aew():
             col = cols[idx]
             self.data_graph[row, col] = self.similarity_matrix[row, col]
 
+    def subtract_identity(self):
+        return np.identity(len(self.similarity_matrix[0])) - self.similarity_matrix
 
+    def get_eigenvectors(self, num_cols):
+        eigenvalues, eigenvectors = np.linalg.eig(self.similarity_matrix)
+        #print(eigenvalues/sum(eigenvalues))
+        
+        pca = PCA(n_components=len(self.similarity_matrix[0]))
+
+        #print(pca.fit(self.similarity_matrix).explained_variance_ratio_)
+
+        #print(pca.fit(self.similarity_matrix).singular_values_)
+
+        pca = pca.fit_transform(self.similarity_matrix)
+
+        #idx = eigenvalues.argsort()[-num_cols:][::-1]
+
+        idx = eigenvalues.argsort()[::-1]
+
+        #print(eigenvectors[:, idx])
+
+        #print(eigenvectors[:, idx])
+
+        #return eigenvectors[:, idx].real
+
+        return pca.real
 

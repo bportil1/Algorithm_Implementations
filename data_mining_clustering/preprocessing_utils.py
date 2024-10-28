@@ -32,7 +32,7 @@ class data():
         self.similarity_matrix = None
 
     def scale_data(self, scaling):
-        #cols = self.train_data.loc[:, ~self.train_data.columns.isin(['protocol_type', 'service', 'flag'])].columns
+        cols = self.train_data.loc[:, ~self.train_data.columns.isin(['protocol_type', 'service', 'flag'])].columns
         #print(cols)
         if scaling == 'standard':
             ct = ColumnTransformer([('scaler', StandardScaler(), cols)],
@@ -101,7 +101,7 @@ class data():
     def load_data(self, datapath, data_type):
         if data_type == 'train':
             self.train_data = pd.read_csv(datapath)
-            self.train_data = self.train_data.tail(800)
+            self.train_data = self.train_data
         elif data_type == 'test':
             self.test_data = pd.read_csv(datapath)
 
