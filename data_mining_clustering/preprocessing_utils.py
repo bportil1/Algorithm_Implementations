@@ -1,4 +1,6 @@
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
@@ -14,6 +16,8 @@ from time import time
 from sklearn.neighbors import kneighbors_graph
 import plotly.express as px
 
+from sklearn.compose import ColumnTransformer
+
 class data():
     def __init__(self, train_data = None, train_labels = None, test_data = None, test_labels = None, output_path = None):
         self.train_data = train_data
@@ -25,18 +29,61 @@ class data():
         self.test_labels = test_labels
         self.test_projection = None
         self.class_labels = {'class': {'normal': 0, 'anomaly':1}}
+        self.similarity_matrix = None
 
     def scale_data(self, scaling):
+        #cols = self.train_data.loc[:, ~self.train_data.columns.isin(['protocol_type', 'service', 'flag'])].columns
+        #print(cols)
         if scaling == 'standard':
-            self.train_data[[col for col in self.train_data]] = StandardScaler().fit_transform(self.train_data[[col for col in self.train_data]])
+            ct = ColumnTransformer([('scaler', StandardScaler(), cols)],
+                                    remainder='passthrough' 
+                                  )
+            
+            #self.train_data[[col for col in self.train_data]] = StandardScaler().fit_transform(self.train_data[[col for col in self.train_data]])
+            
+            #self.train_data.loc[:, self.train_data.columns not in ['protocol_type', 'service', 'flag']] = StandardScaler().fit_transform(self.train_data.loc[:, self.train_data.columns not in ['protocol_type', 'service', 'flag']])
+            
+            self.train_data = pd.DataFrame(ct.fit_transform(self.train_data), columns = self.train_data.columns)
             if not self.test_data.empty:
-                self.test_data[[col for col in self.test_data]] = StandardScaler().fit_transform(self.test_data[[col for col in self.test_data]])
-        elif scaling == 'min_max':
-            min_max_scaler = MinMaxScaler()
-            self.train_data[[col for col in self.train_data]] = min_max_scaler.fit_transform(self.train_data[[col for col in self.train_data]])
-            if not self.test_data.empty:
-                self.test_data[[col for col in self.test_data]] = min_max_scaler.fit_transform(self.test_data[[col for col in self.test_data]])
+                #self.test_data[[col for col in self.test_data]] = StandardScaler().fit_transform(self.test_data[[col for col in self.test_data]])
+                
+                #self.test_data.loc[:, self.test_data.columns not in ['protocol_type', 'service', 'flag']] = StandardScaler().fit_transform(self.test_data.loc[:, self.test_data.columns not in ['protocol_type', 'service', 'flag']]) 
+        
+                self.test_data = pd.DataFrame(ct.fit_transform(self.test_data), columns = self.test_data.columns)
 
+
+        elif scaling == 'min_max':
+            #min_max_scaler = MinMaxScaler()
+            ct = ColumnTransformer([('scaler', MinMaxScaler(), cols)],
+                                    remainder='passthrough'  
+                                  ) 
+
+
+            #self.train_data.loc[:, self.train_data.columns not in ['protocol_type', 'service', 'flag']] = StandardScaler().fit_transform(self.train_data.loc[:, self.train_data.columns not in ['protocol_type', 'service', 'flag']])   
+            #self.train_data[[col for col in self.train_data]] = min_max_scaler.fit_transform(self.train_data[[col for col in self.train_data]])
+            
+
+            self.train_data = pd.DataFrame(ct.fit_transform(self.train_data), columns = self.train_data.columns)
+
+            if not self.test_data.empty:
+                #self.test_data[[col for col in self.test_data]] = min_max_scaler.fit_transform(self.test_data[[col for col in self.test_data]])
+                self.test_data = pd.DataFrame(ct.fit_transform(self.test_data), columns = self.test_data.columns)
+
+
+        #self.test_data.loc[:, self.test_data.columns not in ['protocol_type', 'service', 'flag']] = StandardScaler().fit_transform(self.test_data.loc[:, self.test_data.columns not in ['protocol_type', 'service', 'flag']])
+        
+        elif scaling == 'robust':
+            ct = ColumnTransformer([('scaler', RobustScaler(), cols)],
+                                    remainder='passthrough'
+                                  )
+
+            self.train_data = pd.DataFrame(ct.fit_transform(self.train_data), columns = self.train_data.columns)
+            #self.train_data.loc[:, self.train_data.columns not in ['protocol_type', 'service', 'flag']] = StandardScaler().fit_transform(self.train_data.loc[:, self.train_data.columns not in ['protocol_type', 'service', 'flag']])   
+            #self.train_data[[col for col in self.train_data]] = RobustScaler().fit_transform(self.train_data[[col for col in self.train_data]])
+            if not self.test_data.empty:
+                #self.test_data.loc[:, self.test_data.columns not in ['protocol_type', 'service', 'flag']] = StandardScaler().fit_transform(self.test_data.loc[:, self.test_data.columns not in ['protocol_type', 'service', 'flag']])
+                #self.test_data[[col for col in self.test_data]] = RobustScaler().fit_transform(self.test_data[[col for col in self.test_data]])
+                self.test_data = pd.DataFrame(ct.fit_transform(self.test_data), columns = self.test_data.columns)
         else:
             print("Scaling arg not supported")
         
@@ -54,7 +101,7 @@ class data():
     def load_data(self, datapath, data_type):
         if data_type == 'train':
             self.train_data = pd.read_csv(datapath)
-            self.train_data = self.train_data.head(5000)
+            self.train_data = self.train_data.tail(800)
         elif data_type == 'test':
             self.test_data = pd.read_csv(datapath)
 
@@ -94,10 +141,10 @@ class data():
             #    n_neighbors=n_neighbors, n_components=num_components, method="standard", 
             #    eigen_solver='dense', n_jobs=-1
             #),
-            "Random Trees embedding": make_pipeline(
-                RandomTreesEmbedding(n_estimators=200, max_depth=5, random_state=0, n_jobs=-1),
-                TruncatedSVD(n_components=num_components),
-            ),
+            #"Random Trees embedding": make_pipeline(
+            #    RandomTreesEmbedding(n_estimators=200, max_depth=5, random_state=0, n_jobs=-1),
+            #    TruncatedSVD(n_components=num_components),
+            #),
             #"t-SNE embedding": TSNE(
             #        n_components=num_components,
             #    max_iter=500,
@@ -105,7 +152,7 @@ class data():
             #    n_jobs=-1,
             #    random_state=0,
             #),
-            "PCA": PCA(n_components=3),
+            #"PCA": PCA(n_components=3, svd_solver='full'),
         }
         if embedding_subset == None:
             return embeddings
@@ -131,13 +178,14 @@ class data():
             timing[name] = time() - start_time
 
         return projections, timing 
-
+    
     def generate_graphs(self, data_type):
         if data_type == 'train':
-            self.train_graph = kneighbors_graph(self.train_data, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
+            self.train_graph = kneighbors_graph(self.train_data, n_neighbors=(len(self.train_data)-1), mode='connectivity', metric='euclidean', p=2, include_self=True, n_jobs=-1)
+            print(self.train_graph.shape)
         elif data_type == 'test':
-            self.test_graph = kneighbors_graph(self.test_data, n_neighbors=150, mode='connectivity', metric='euclidean', include_self=False, n_jobs=-1)
-
+            self.test_graph = kneighbors_graph(self.test_data, n_neighbors=(len(self.test_data)-1), mode='connectivity', metric='euclidean', p=2, include_self=True, n_jobs=-1)
+            
     def lower_dimensional_embedding(self, data, data_type, passed_title, path):
         if data_type == 'train':
             labels = self.train_labels

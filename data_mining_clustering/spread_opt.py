@@ -8,14 +8,21 @@ from math import ceil
 class aew():
     def __init__(self, data_graph, data, precomputed_gamma=np.empty((0,0))):
 
+        #print(data_graph.shape[0])
+
         self.similarity_matrix = np.zeros((data_graph.shape[0], data_graph.shape[0]))
+
+        #print("NaNs: ", np.count_nonzero(np.isnan(self.similarity_matrix.size)))
+
+        #print(self.similarity_matrix[0])
+
         self.gamma = precomputed_gamma
         self.data_graph = data_graph
         self.data = data
         self.min_error = float('inf')
 
         if self.gamma.shape == (0,0):
-            self.gamma = np.ones(self.data.loc[[0]].shape[1])
+            self.gamma = np.ones(41)
 
     def normalization_computation(self, section):
         res = []
@@ -24,12 +31,15 @@ class aew():
                 x_sum = np.sum(self.similarity_matrix[x])
                 y_sum = np.sum(self.similarity_matrix[y])
                 if (x_sum > 0 and y_sum > 0) and (not isclose(x_sum, 0, abs_tol=1e-9) and not isclose(y_sum, 0, abs_tol=1e-9)):
-                    res.append((x, y, -(self.similarity_matrix[x][y] / np.sqrt(x_sum * y_sum))))
+                    res.append((x, y, self.similarity_matrix[x][y] / np.sqrt(x_sum * y_sum)))
                 else:
                     res.append((x, y, 0))
         return res
 
     def normalization_parallel_caller(self, split_data):
+
+        #print("Similarity?: ", (self.similarity_matrix==self.similarity_matrix.T).all())
+
         with Pool(processes=cpu_count()) as pool:
             edge_weight_res = [pool.apply_async(self.normalization_computation, (section, )) for section in split_data]
 
@@ -37,18 +47,26 @@ class aew():
 
         for section in edge_weights:
             for weight in section:
+                #print(weight)
                 self.similarity_matrix[weight[0]][weight[1]] = weight[2]
-
+                self.similarity_matrix[weight[1]][weight[0]] = weight[2]
         del edge_weights, edge_weight_res
+
+        #print("Similarity?: ", (self.similarity_matrix==self.similarity_matrix.T).all())
 
     def laplacian_normalization(self):
         print("Normalizing Edge Weights")
+
+        print("Similarity?: ", (self.similarity_matrix==self.similarity_matrix.T).all())
 
         divisor = ceil(len(self.similarity_matrix[0]) / 32)
 
         #fix repeating indices on last section split
 
         curr_start = 0
+
+        #print("NaNs: ", self.similarity_matrix.size - np.count_nonzero(np.isnan(self.similarity_matrix.size)))
+
 
         for idx in range(1, 33):
 
@@ -67,6 +85,8 @@ class aew():
 
             curr_start = curr_end
 
+        print("Similarity?: ", (self.similarity_matrix==self.similarity_matrix.T).all())
+
         print("Finished Normalizing Edge Weights")
 
     def collect_degree(self, idx):
@@ -81,21 +101,9 @@ class aew():
         temp_res = 0
 
         for feature in range(len(point2[0])):
-            temp_res += (point1[0][feature] - point2[0][feature]) ** 2 / (self.gamma[feature]) ** 2
-        wij = np.exp(-temp_res, dtype=np.longdouble)
+            temp_res += ((point1[0][feature] - point2[0][feature]) ** 2) / ((self.gamma[feature]) ** 2)
 
-        denom = np.sqrt(self.collect_degree(pt1_idx)*self.collect_degree(pt2_idx))
-
-        if denom > 0 and not isclose(denom, 0, abs_tol=1e-20):
-            #print (-(wij/denom))
-            return -(wij/denom)
-        else:
-            return 0
-
-        ##### this exponent op is rarely returing an overflow, not sure the type of value thats causing it, seems stable up to 5 iterations
-        #print(temp_res)
-
-        #return np.exp(-temp_res, dtype=np.longdouble)
+        return np.exp(-temp_res, dtype=np.longdouble)
 
     def objective_computation(self, section):
         approx_error = 0
@@ -112,8 +120,9 @@ class aew():
                 temp_sum /= dii
             else:
                 temp_sum = np.zeros(len(self.gamma))
-            approx_error += np.sqrt(np.abs(np.asarray(self.data.loc[[idx]])**2 - temp_sum**2))
-        return approx_error
+            #approx_error += np.sqrt(np.abs(np.asarray(self.data.loc[[idx]])**2 - temp_sum**2))
+            approx_error += np.abs((np.asarray(self.data.loc[[idx]]) - temp_sum)**2)
+        return np.sqrt(approx_error)
 
     def objective_function(self):
         errors = []
@@ -209,22 +218,34 @@ class aew():
             print("Computing Error")
             curr_error = self.objective_function()
             print("Current Error: ", curr_error)
-            if (self.min_error < curr_error) or (curr_error < tol):
+            #if (self.min_error < curr_error) or (curr_error < tol):
+            
+            if curr_error < tol:
                 break
-            self.min_error = curr_error
+                
+            elif self.min_error < curr_error and learning_rate > .001: 
+                learning_rate -= .01 
+
+            elif self.min_error - curr_error > 2:
+                learning_rate += .01
+
+            if curr_error < self.min_error:
+                self.min_error = curr_error
             print("Gamma: ", self.gamma)
             self.gamma = self.gamma + (gradient * learning_rate)
             self.gamma = self.gamma
             print("Updated Gamma: ", self.gamma)
+            #else:
+            print("Updated Learning Rate: ", learning_rate)
         print("Completed Gradient Descent")
 
     def generate_optimal_edge_weights(self, num_iterations):
         print("Generating Optimal Edge Weights")
 
-        self.gradient_descent(.1, num_iterations, .01)
+        self.gradient_descent(.05, num_iterations, .01)
 
         self.generate_edge_weights()
-
+    
     def edge_weight_computation(self, section):
 
         res = []
@@ -245,20 +266,36 @@ class aew():
 
         split_data = self.split(range(self.data_graph.shape[0]), cpu_count())
 
+
+        #print("NaNs: ", np.count_nonzero(np.isnan(self.similarity_matrix.size)))
+
+
         with Pool(processes=cpu_count()) as pool:
             edge_weight_res = [pool.apply_async(self.edge_weight_computation, (section, )) for section in split_data]
 
             edge_weights = [edge_weight.get() for edge_weight in edge_weight_res]
 
+        #print("NaNs: ", np.count_nonzero(np.isnan(self.similarity_matrix.size)))
+
         for section in edge_weights:
             for weight in section:
+                #weight[2]
                 self.similarity_matrix[weight[0]][weight[1]] = weight[2]
+                self.similarity_matrix[weight[1]][weight[0]] = weight[2]
+
+        #print("NaNs: ", np.count_nonzero(np.isnan(self.similarity_matrix.size)))
 
         #self.laplacian_normalization()
 
-        self.rewrite_edges()
+        #print("NaNs: ", np.count_nonzero(np.isnan(self.similarity_matrix.size)))
+
+        #self.rewrite_edges()
+
+        #print("NaNs: ", np.count_nonzero(np.isnan(self.similarity_matrix.size)))
 
         self.data_graph = self.data_graph.toarray()
+
+        #print("NaNs: ", np.count_nonzero(np.isnan(self.similarity_matrix.size)))
 
         print("Edge Weight Generation Complete")
 
@@ -270,4 +307,6 @@ class aew():
             row = rows[idx]
             col = cols[idx]
             self.data_graph[row, col] = self.similarity_matrix[row, col]
+
+
 
