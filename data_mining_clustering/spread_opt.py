@@ -360,6 +360,10 @@ class aew():
     
         self.labels = self.labels.loc[~empty_rows]
 
+    def unit_normalization(self, matrix):
+        norms = np.linalg.norm(matrix, axis=1, keepdims=True)
+        return matrix/norms
+
     def get_eigenvectors(self):
         eigenvalues, eigenvectors = np.linalg.eig(self.similarity_matrix)
         #print(eigenvalues/sum(eigenvalues))
@@ -391,6 +395,9 @@ class aew():
         pca = PCA(n_components=2)
 
         pca = pca.fit_transform(self.similarity_matrix)
+
+        pca = self.unit_normalization(pca.real)
+
         '''
         pca2 = PCA(n_components=num_components)
 
@@ -427,5 +434,5 @@ class aew():
 
         #print(pca.real)
 
-        return pca.real
+        return pca
 

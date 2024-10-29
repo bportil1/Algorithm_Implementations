@@ -182,20 +182,15 @@ class data():
 
     def remove_disconnections(self):
 
-
-
-
         self.train_data = self.train_data[(self.train_data != 0).any(axis=1)]
         self.test_data = self.test_data.loc[:, (self.test_data != 0).any(axis=0)]
         self.test_data = self.test_data.loc[:, (self.test_data != 0).any(axis=0)]
 
-
-
     def generate_graphs(self, data_type):
         if data_type == 'train':
-            self.train_graph = kneighbors_graph(self.train_data, n_neighbors=(len(self.train_data)-1), mode='connectivity', metric='euclidean', p=2, include_self=True, n_jobs=-1)
+            self.train_graph = kneighbors_graph(self.train_data, n_neighbors=(len(self.train_data)-1), mode='connectivity', metric='euclidean', p=2, include_self=False, n_jobs=-1)
         elif data_type == 'test':
-            self.test_graph = kneighbors_graph(self.test_data, n_neighbors=(len(self.test_data)-1), mode='connectivity', metric='euclidean', p=2, include_self=True, n_jobs=-1)
+            self.test_graph = kneighbors_graph(self.test_data, n_neighbors=(len(self.test_data)-1), mode='connectivity', metric='euclidean', p=2, include_self=False, n_jobs=-1)
             
     def lower_dimensional_embedding(self, data, data_type, passed_title, path):
         if data_type == 'train':
