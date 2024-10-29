@@ -456,7 +456,14 @@ class clustering():
 
             X_graph = X_data.train_graph
 
-            X_obj = aew(X_graph, X_df, np.asarray([-.1,-.121], dtype=np.longdouble))
+            print(y[:5])
+            y_df = pd.DataFrame(y)
+
+            X_obj = aew(X_graph, X_df, y_df, np.asarray([-.1,-.121], dtype=np.longdouble))
+
+            y = y_df[y_df.columns[0]].values
+
+            print(y[:5])
 
             #X_obj.generate_optimal_edge_weights(5)
 
@@ -670,8 +677,8 @@ class clustering():
                 plt.scatter(X[:, 0], X[:, 1], s=10, color=colors[y_pred])
 
                 plt.title(accuracy_score(y,y_pred))
-                plt.xlim(-1.5, 1.5)
-                plt.ylim(-1.5, 1.5)
+                plt.xlim(-3, 3)
+                plt.ylim(-3, 3)
                 plt.xticks(())
                 plt.yticks(())
                 plt.text(

@@ -7,6 +7,8 @@ from math import ceil
 
 from sklearn.decomposition import PCA
 
+from sklearn.preprocessing import MinMaxScaler
+
 class aew():
     def __init__(self, data_graph, data, labels, precomputed_gamma=np.empty((0,0))):
 
@@ -314,11 +316,29 @@ class aew():
 
         self.rewrite_edges()
 
+        self.remove_disconnections()
+
+        self.scale_matrix()
+
+        print(np.any(np.sum(self.similarity_matrix, axis=1) < 0))
+
+        print(np.any(np.sum(self.similarity_matrix, axis=0) < 0))
+        
+        print(np.any(np.sum(self.similarity_matrix, axis=1) == 0))
+
+        print(np.any(np.sum(self.similarity_matrix, axis=0) == 0))
+
         self.eigenvectors = self.get_eigenvectors()
 
         #self.data_graph = self.data_graph.toarray()
 
         print("Edge Weight Generation Complete")
+
+
+    def scale_matrix(self):
+        scaler = MinMaxScaler()
+
+        self.similarity_matrix = scaler.fit_transform(self.similarity_matrix)
 
     def rewrite_edges(self):
 
@@ -333,11 +353,12 @@ class aew():
         self.similarity_matrix = np.identity(len(self.similarity_matrix[0])) - self.similarity_matrix
 
     def remove_disconnections(self):
-        self.similarity_matrix = self.similarity_matrix[(self.similarity_matrix != 0).any(axis=1)]
-        self.similarity_matrix = self.similarity_matrix.loc[:, (self.similarity_matrix != 0).any(axis=0)]
+        empty_rows = np.all(self.similarity_matrix == 0, axis = 1)
+        empty_cols = np.all(self.similarity_matrix == 0, axis = 0)
 
-        self.
-
+        self.similarity_matrix = self.similarity_matrix[~empty_rows, :][:, ~empty_cols]
+    
+        self.labels = self.labels.loc[~empty_rows]
 
     def get_eigenvectors(self):
         eigenvalues, eigenvectors = np.linalg.eig(self.similarity_matrix)
@@ -351,7 +372,7 @@ class aew():
 
         cum_variance = expl_var.cumsum()
 
-        desired_variance = 0.85
+        desired_variance = 0.90
 
         num_components = ( cum_variance <= desired_variance).sum() + 1
 
@@ -367,7 +388,7 @@ class aew():
 
         #print(pca.fit(self.similarity_matrix).singular_values_)
 
-        pca = PCA(n_components=num_components)
+        pca = PCA(n_components=2)
 
         pca = pca.fit_transform(self.similarity_matrix)
         '''

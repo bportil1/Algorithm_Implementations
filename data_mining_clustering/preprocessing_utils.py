@@ -100,7 +100,7 @@ class data():
 
     def load_data(self, datapath, data_type):
         if data_type == 'train':
-            self.train_data = pd.read_csv(datapath).tail(800)
+            self.train_data = pd.read_csv(datapath).tail(5000)
             #self.train_data = self.train_data
         elif data_type == 'test':
             self.test_data = pd.read_csv(datapath)
