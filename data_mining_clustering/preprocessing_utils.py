@@ -100,7 +100,7 @@ class data():
 
     def load_data(self, datapath, data_type):
         if data_type == 'train':
-            self.train_data = pd.read_csv(datapath)
+            self.train_data = pd.read_csv(datapath).head(800)
             self.train_data = self.train_data
         elif data_type == 'test':
             self.test_data = pd.read_csv(datapath)
@@ -141,18 +141,19 @@ class data():
             #    n_neighbors=n_neighbors, n_components=num_components, method="standard", 
             #    eigen_solver='dense', n_jobs=-1
             #),
-            #"Random Trees embedding": make_pipeline(
-            #    RandomTreesEmbedding(n_estimators=200, max_depth=5, random_state=0, n_jobs=-1),
-            #    TruncatedSVD(n_components=num_components),
-            #),
+            "Random Trees embedding": make_pipeline(
+                RandomTreesEmbedding(n_estimators=200, max_depth=5, random_state=0, n_jobs=-1),
+                TruncatedSVD(n_components=num_components),
+            ),
             #"t-SNE embedding": TSNE(
             #        n_components=num_components,
             #    max_iter=500,
             #    n_iter_without_progress=150,
             #    n_jobs=-1,
+            #    init='random',
             #    random_state=0,
             #),
-            #"PCA": PCA(n_components=3, svd_solver='full'),
+            "PCA": PCA(n_components=num_components),
         }
         if embedding_subset == None:
             return embeddings
@@ -182,7 +183,6 @@ class data():
     def generate_graphs(self, data_type):
         if data_type == 'train':
             self.train_graph = kneighbors_graph(self.train_data, n_neighbors=(len(self.train_data)-1), mode='connectivity', metric='euclidean', p=2, include_self=True, n_jobs=-1)
-            print(self.train_graph.shape)
         elif data_type == 'test':
             self.test_graph = kneighbors_graph(self.test_data, n_neighbors=(len(self.test_data)-1), mode='connectivity', metric='euclidean', p=2, include_self=True, n_jobs=-1)
             

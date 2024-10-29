@@ -2,10 +2,13 @@ from spread_opt import *
 from preprocessing_utils import *
 from clustering import *
 
-if __name__ == '__main__':
-    ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
+from sklearn.metrics import accuracy_score
 
-    #ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
+
+if __name__ == '__main__':
+    #ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
+
+    ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
 
     #ids_train_file = '/home/bryanportillo_lt/Documents/py_env/venv/network_intrusion_dataset/Train_data.csv'
 
@@ -34,9 +37,9 @@ if __name__ == '__main__':
 
     os.makedirs(init_path, exist_ok=True)
 
-    data_obj.lower_dimensional_embedding(data_obj.train_data, 'train', 'Original Train Data: 3-Dimensions', init_path)
+    #data_obj.lower_dimensional_embedding(data_obj.train_data, 'train', 'Original Train Data: 3-Dimensions', init_path)
 
-    data_obj.lower_dimensional_embedding(data_obj.test_data, 'test', 'Original Test Data: 3-Dimensions', init_path)
+    #data_obj.lower_dimensional_embedding(data_obj.test_data, 'test', 'Original Test Data: 3-Dimensions', init_path)
 
     data_obj.generate_graphs('train')
 
@@ -57,23 +60,21 @@ if __name__ == '__main__':
     clustering_meths = [           'Kmeans',
                                    'Agglomerative',
                                    'Spectral',
-                                   'MeanShift',
                                    'Birch',
                                    'BisectingKmeans',
-                                   'GaussianMixtureModel'
+                                   'GaussianMixture'
                                    ]
 
-    #data_obj.lower_dimensional_embedding(data_obj.train_graph ,'train', 'Original Train Graph: 3-Dimensions', init_path)
+    data_obj.lower_dimensional_embedding(data_obj.train_graph ,'train', 'Original Train Graph: 3-Dimensions', init_path)
 
-    #data_obj.lower_dimensional_embedding(data_obj.test_graph, 'test', 'Original Test Graph: 3-Dimensions', init_path)
+    data_obj.lower_dimensional_embedding(data_obj.test_graph, 'test', 'Original Test Graph: 3-Dimensions', init_path)
     
     plain_clustering = clustering(data_obj.train_data, data_obj.train_labels, data_obj.test_data, data_obj.test_labels, "full", "40_dim_no_proj", clustering_methods=clustering_meths, workers = -1)
 
     #print(plain_clustering.clustering_methods)
     #print(plain_clustering.clustering_funcs)
 
-    #plain_clustering.generate_clustering()
-    
+    plain_clustering.generate_clustering()
         
     #prec_gamma = np.ones(data_obj.train_data.loc[[0]].shape[1]) * .15 
     
@@ -87,33 +88,51 @@ if __name__ == '__main__':
 
     aew_train = aew(data_obj.train_graph, data_obj.train_data, prec_gamma)
 
-    #aew_train.generate_optimal_edge_weights(1000)
+    #aew_train.generate_optimal_edge_weights(3)
 
     aew_train.generate_edge_weights()
 
     aew_test = aew(data_obj.test_graph, data_obj.test_data, aew_train.gamma)
 
     aew_test.generate_edge_weights()
+    '''
+    clustering_with_adj_matr_prec_kmeans = SpectralClustering(n_clusters=2, affinity='precomputed', assign_labels='kmeans', n_jobs=-1)
 
+    print("Kmeans Train: ", accuracy_score(clustering_with_adj_matr_prec_kmeans.fit_predict(aew_train.similarity_matrix), data_obj.train_labels))
+
+    clustering_with_adj_matr_prec_disc = SpectralClustering(n_clusters=2, affinity='precomputed', assign_labels='discretize', n_jobs=-1)
+
+    print("Discretize Train: ", accuracy_score(clustering_with_adj_matr_prec_disc.fit_predict(aew_train.similarity_matrix), data_obj.train_labels))
+
+    clustering_with_adj_matr_prec_clust = SpectralClustering(n_clusters=2, affinity='precomputed', assign_labels='cluster_qr', n_jobs=-1)
+
+    print("Cluster_qr Train: ", accuracy_score(clustering_with_adj_matr_prec_clust.fit_predict(aew_train.similarity_matrix), data_obj.train_labels))
+
+    clustering_with_adj_matr_prec_kmeans1 = SpectralClustering(n_clusters=2, affinity='precomputed', assign_labels='kmeans', n_jobs=-1)
+
+    print("Kmeans Test: ", accuracy_score(clustering_with_adj_matr_prec_kmeans.fit_predict(aew_test.similarity_matrix), data_obj.test_labels))
+
+    clustering_with_adj_matr_prec_disc1 = SpectralClustering(n_clusters=2, affinity='precomputed', assign_labels='discretize', n_jobs=-1)
+
+    print("Discretize Test: ", accuracy_score(clustering_with_adj_matr_prec_disc.fit_predict(aew_test.similarity_matrix), data_obj.test_labels))
+
+    clustering_with_adj_matr_prec_clust1 = SpectralClustering(n_clusters=2, affinity='precomputed', assign_labels='cluster_qr', n_jobs=-1)
+
+    print("Cluster_qr Test: ", accuracy_score(clustering_with_adj_matr_prec_clust.fit_predict(aew_test.similarity_matrix), data_obj.test_labels))
+    '''
     plain_graph_clustering = clustering(aew_train.eigenvectors, data_obj.train_labels, aew_test.eigenvectors, data_obj.test_labels, "full", "40_dim_no_proj_graph_data", clustering_methods=clustering_meths,  workers = -1)
 
     plain_graph_clustering.generate_clustering()
 
-    clusters = clustering(workers=-1)
-
-    clusters.generate_clustering()
-
-
-    '''
-    num_components = [3, 4, 5, 6, 7, 8, 9, 10] #, 11, 12, 13, 14, 15, 16, 18, 20, 25, 30, 35, 40]
+    num_components = [3, 4, 5, 6] #, 11, 12, 13, 14, 15, 16, 18, 20, 25, 30, 35, 40]
 
     for num_comp in num_components:
 
-        #print("Current number of components: ", num_comp)
+        print("Current number of components: ", num_comp)
 
-        data_obj.train_projection, _ = data_obj.downsize_data(aew_train.similarity_matrix, 'train', num_comp)
+        data_obj.train_projection, _ = data_obj.downsize_data(aew_train.eigenvectors, 'train', num_comp)
 
-        data_obj.test_projection, _ = data_obj.downsize_data(aew_test.similarity_matrix, 'test', num_comp)
+        data_obj.test_projection, _ = data_obj.downsize_data(aew_test.eigenvectors, 'test', num_comp)
         init_path = './results/orig_data_visualization/num_comp_' + str(num_comp) + '/'
 
         os.makedirs(init_path, exist_ok=True)
@@ -131,4 +150,4 @@ if __name__ == '__main__':
             clustering_graph_data = clustering(data_obj.train_projection[projection], data_obj.train_labels, data_obj.test_projection[projection], data_obj.test_labels, num_comp, projection, clustering_methods=clustering_meths, workers = -1)
 
             clustering_graph_data.generate_clustering()
-    '''
+

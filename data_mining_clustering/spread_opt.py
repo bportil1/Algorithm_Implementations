@@ -41,8 +41,9 @@ class aew():
 
         for section in edge_weights:
             for weight in section:
-                self.similarity_matrix[weight[0]][weight[1]] = weight[2]
-                self.similarity_matrix[weight[1]][weight[0]] = weight[2]
+                if weight[0] != weight[1]:
+                    self.similarity_matrix[weight[0]][weight[1]] = weight[2]
+                    self.similarity_matrix[weight[1]][weight[0]] = weight[2]
         del edge_weights, edge_weight_res
 
     def laplacian_normalization(self):
@@ -73,8 +74,41 @@ class aew():
 
         temp_res = 0
 
+        #print("in similarity fcn")
+        
+        #print(pt1_idx, "point 1: ", point1)
+
+        #print(pt2_idx, "point 2: ", point2)
+
+        #print("dipping similarity_fcn")
+        
         for feature in range(len(point2[0])):
-            temp_res += ((point1[0][feature] - point2[0][feature]) ** 2) / ((self.gamma[feature]) ** 2)
+
+            #print(point1[0], " ", point2[0], " ", self.gamma[feature])
+
+            #print((point1[0][feature] - point2[0][feature]) ** 2 , " ", (self.gamma[feature]) ** 2)
+
+            temp_res += ((point1[0][feature] - point2[0][feature]) ** 2) / ( 2*((self.gamma[feature]) ** 2))
+       
+            #print(temp_res)
+
+        #print(np.exp(-temp_res, dtype=np.longdouble))
+
+        '''
+        distance = np.linalg.norm(point1 - point2)
+
+        print(-(distance ** 2), " ", 2 * self.gamma ** 2)
+
+
+        print(np.exp(-(distance ** 2) / (2 * self.gamma ** 2)) )
+
+        #print(temp_res, " ", np.exp(-temp_res, dtype=np.longdouble))
+
+        print("returning")
+
+        return np.exp(-(distance ** 2) / (2 * self.gamma ** 2)) 
+        '''
+        #print('returning')
 
         return np.exp(-temp_res, dtype=np.longdouble)
 
@@ -225,14 +259,22 @@ class aew():
 
             for vertex in self.data_graph.indices[point]:
 
+                #print(idx," ",vertex, " ", self.similarity_function(idx, vertex))
+
                 res.append((idx, vertex, self.similarity_function(idx, vertex)))
+
+        
 
         return res
 
     def generate_edge_weights(self):
         print("Generating Edge Weights")
 
+        #print(self.similarity_matrix)
+
         split_data = self.split(range(self.data_graph.shape[0]), cpu_count())
+
+        #print(split_data)
 
         with Pool(processes=cpu_count()) as pool:
             edge_weight_res = [pool.apply_async(self.edge_weight_computation, (section, )) for section in split_data]
@@ -241,20 +283,39 @@ class aew():
 
         for section in edge_weights:
             for weight in section:
+                #print(weight)
                 self.similarity_matrix[weight[0]][weight[1]] = weight[2]
                 self.similarity_matrix[weight[1]][weight[0]] = weight[2]
 
+        #print(len(self.similarity_matrix))
+        #print(len(self.similarity_matrix[0]))
+
+        #print(self.similarity_matrix)
+
+        #print("Diagonal 1: ", np.diagonal(self.similarity_matrix))
+
+
         self.laplacian_normalization()
 
+        #print(self.similarity_matrix)
+
+        #print(np.identity(len(self.similarity_matrix[0])))
+
+        #print("Diagonal 2: ", np.diagonal(self.similarity_matrix))
+
         self.subtract_identity()
+
+        #print(self.similarity_matrix[1])
+
+        #print(self.similarity_matrix[1][1])
+
+        #print("Diagonal 3: ", np.diagonal(self.similarity_matrix))
 
         self.rewrite_edges()
 
-        self.subtract_identity()
+        self.eigenvectors = self.get_eigenvectors()
 
-        self.eigenvectors = self.get_eigenvectors(3)
-
-        self.data_graph = self.data_graph.toarray()
+        #self.data_graph = self.data_graph.toarray()
 
         print("Edge Weight Generation Complete")
 
@@ -268,23 +329,43 @@ class aew():
             self.data_graph[row, col] = self.similarity_matrix[row, col]
 
     def subtract_identity(self):
-        return np.identity(len(self.similarity_matrix[0])) - self.similarity_matrix
+        self.similarity_matrix = np.identity(len(self.similarity_matrix[0])) - self.similarity_matrix
 
-    def get_eigenvectors(self, num_cols):
+    def get_eigenvectors(self):
         eigenvalues, eigenvectors = np.linalg.eig(self.similarity_matrix)
         #print(eigenvalues/sum(eigenvalues))
         
-        pca = PCA(n_components=len(self.similarity_matrix[0]))
+        pca = PCA()
+
+        pca.fit(self.similarity_matrix)
+
+        expl_var = pca.explained_variance_ratio_
+
+        cum_variance = expl_var.cumsum()
+
+        desired_variance = 0.90
+
+        num_components = ( cum_variance <= desired_variance).sum() + 1
+
+        #selected_columns = self.similarity_matrix.columns[:num_components]
+
+        selected_columns = self.similarity_matrix[:,:num_components]
+
+        print(num_components)
+
+        #print(selected_columns)
 
         #print(pca.fit(self.similarity_matrix).explained_variance_ratio_)
 
         #print(pca.fit(self.similarity_matrix).singular_values_)
 
+        pca = PCA(n_components=num_components)
+
         pca = pca.fit_transform(self.similarity_matrix)
 
         #idx = eigenvalues.argsort()[-num_cols:][::-1]
 
-        idx = eigenvalues.argsort()[::-1]
+        #idx = eigenvalues.argsort()[::-1]
 
         #print(eigenvectors[:, idx])
 

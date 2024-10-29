@@ -79,7 +79,7 @@ class clustering():
                 'OPTICS': (lambda: self.generate_optics(self.get_clustering_hyperparams('OPTICS'))),
                 'Birch': (lambda : self.generate_birch(self.get_clustering_hyperparams('Birch'))),
                 'BisectingKmeans': (lambda : self.generate_bisectingkmeans(self.get_clustering_hyperparams('BisectingKmeans'))),
-                'GaussianMixtureModel': (lambda : self.generate_gaussianmixture(self.get_clustering_hyperparams('GaussianMixtureModel'))) 
+                'GaussianMixture': (lambda : self.generate_gaussianmixture(self.get_clustering_hyperparams('GaussianMixture'))) 
         }
         
         return avail_clustering_funcs[meth]()
@@ -120,7 +120,7 @@ class clustering():
                                     'n_clusters' : [2, 3, 4, 5, 6], #, 7, 8, 9, 10, 15, 20],
                                     'bisecting_strategy': ('biggest_inertia', 'largest_cluster')
                 },
-                'GaussianMixtureModel': {'n_components' : [2,3,4,5],
+                'GaussianMixture': {'n_components' : [2,3,4,5],
                                          'covariance_type': ('full', 'tied', 'diag', 'spherical'),
                                          'init_params': ('kmeans', 'k-means++', 'random', 'random_from_data')
                 }
@@ -241,7 +241,7 @@ class clustering():
         for cov_type in hyperparams['covariance_type']:
             for init_par in hyperparams['init_params']:
                 for n_comp in hyperparams['n_components']:
-                    clustering = mixture.GaussianMixture(n_components=n_comp, covariance_type=cov_type, init_params=init_par)
+                    clustering = mixture.GaussianMixture(n_components=n_comp, covariance_type=cov_type, reg_covar=1*10^5, init_params=init_par)
                     self.cluster_evaluation('gaussianmixture', (cov_type, init_par, n_comp), clustering)
                                 
     def cluster_evaluation(self, alg, hyperparameters, model):
@@ -335,7 +335,7 @@ class clustering():
 
         data_obj = data(test_labels=labels_pred)
 
-        #data_obj.lower_dimensional_embedding(self.test_data, 'test', filename_base, vis_file_name)
+        data_obj.lower_dimensional_embedding(self.test_data, 'test', filename_base, vis_file_name)
 
     def synthetic_data_tester(self):
 
