@@ -37,9 +37,9 @@ if __name__ == '__main__':
 
     os.makedirs(init_path, exist_ok=True)
 
-    #data_obj.lower_dimensional_embedding(data_obj.train_data, 'train', 'Original Train Data: 3-Dimensions', init_path)
+    data_obj.lower_dimensional_embedding(data_obj.train_data, 'train', 'Original Train Data: 3-Dimensions', init_path)
 
-    #data_obj.lower_dimensional_embedding(data_obj.test_data, 'test', 'Original Test Data: 3-Dimensions', init_path)
+    data_obj.lower_dimensional_embedding(data_obj.test_data, 'test', 'Original Test Data: 3-Dimensions', init_path)
 
     data_obj.generate_graphs('train')
 
@@ -71,9 +71,6 @@ if __name__ == '__main__':
     
     plain_clustering = clustering(data_obj.train_data, data_obj.train_labels, data_obj.test_data, data_obj.test_labels, "full", "40_dim_no_proj", clustering_methods=clustering_meths, workers = -1)
 
-    #print(plain_clustering.clustering_methods)
-    #print(plain_clustering.clustering_funcs)
-
     plain_clustering.generate_clustering()
         
     #prec_gamma = np.ones(data_obj.train_data.loc[[0]].shape[1]) * .15 
@@ -88,11 +85,13 @@ if __name__ == '__main__':
 
     aew_train = aew(data_obj.train_graph, data_obj.train_data, prec_gamma)
 
-    #aew_train.generate_optimal_edge_weights(3)
+    aew_train.generate_optimal_edge_weights(10)
 
-    aew_train.generate_edge_weights()
+    #aew_train.generate_edge_weights()
 
     aew_test = aew(data_obj.test_graph, data_obj.test_data, aew_train.gamma)
+
+    #print(aew_test.gamma)
 
     aew_test.generate_edge_weights()
     '''
@@ -124,7 +123,7 @@ if __name__ == '__main__':
 
     plain_graph_clustering.generate_clustering()
 
-    num_components = [3, 4, 5, 6] #, 11, 12, 13, 14, 15, 16, 18, 20, 25, 30, 35, 40]
+    num_components = [3] #, 11, 12, 13, 14, 15, 16, 18, 20, 25, 30, 35, 40]
 
     for num_comp in num_components:
 

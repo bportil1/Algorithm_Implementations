@@ -8,12 +8,13 @@ from math import ceil
 from sklearn.decomposition import PCA
 
 class aew():
-    def __init__(self, data_graph, data, precomputed_gamma=np.empty((0,0))):
+    def __init__(self, data_graph, data, labels, precomputed_gamma=np.empty((0,0))):
 
         self.similarity_matrix = np.zeros((data_graph.shape[0], data_graph.shape[0]))
         self.gamma = precomputed_gamma
         self.data_graph = data_graph
         self.data = data
+        self.labels = labels
         self.min_error = float('inf')
         self.eigenvectors = None
 
@@ -331,6 +332,13 @@ class aew():
     def subtract_identity(self):
         self.similarity_matrix = np.identity(len(self.similarity_matrix[0])) - self.similarity_matrix
 
+    def remove_disconnections(self):
+        self.similarity_matrix = self.similarity_matrix[(self.similarity_matrix != 0).any(axis=1)]
+        self.similarity_matrix = self.similarity_matrix.loc[:, (self.similarity_matrix != 0).any(axis=0)]
+
+        self.
+
+
     def get_eigenvectors(self):
         eigenvalues, eigenvectors = np.linalg.eig(self.similarity_matrix)
         #print(eigenvalues/sum(eigenvalues))
@@ -343,28 +351,49 @@ class aew():
 
         cum_variance = expl_var.cumsum()
 
-        desired_variance = 0.90
+        desired_variance = 0.85
 
         num_components = ( cum_variance <= desired_variance).sum() + 1
 
         #selected_columns = self.similarity_matrix.columns[:num_components]
 
-        selected_columns = self.similarity_matrix[:,:num_components]
+        #selected_columns = self.similarity_matrix[:,:num_components]
 
         print(num_components)
 
         #print(selected_columns)
 
-        #print(pca.fit(self.similarity_matrix).explained_variance_ratio_)
+        print(pca.fit(self.similarity_matrix).explained_variance_ratio_)
 
         #print(pca.fit(self.similarity_matrix).singular_values_)
 
         pca = PCA(n_components=num_components)
 
         pca = pca.fit_transform(self.similarity_matrix)
+        '''
+        pca2 = PCA(n_components=num_components)
 
+        pca2 = pca2.fit(self.similarity_matrix)
+
+        loadings = pca2.components_
+
+        df = pd.DataFrame(self.similarity_matrix)
+
+        # Create a DataFrame to hold the loadings
+        loadings_df = pd.DataFrame(loadings.T, columns=[f"PC{i+1}" for i in range(num_components)], index=df.columns)
+
+        # Get the absolute values of the loadings to determine the most important features
+        abs_loadings_df = loadings_df.abs()
+
+        # For each principal component, get the top contributing features
+        top_features = [abs_loadings_df.nlargest(3, f"PC{i+1}") for i in range(num_components)]
+
+        #Print the top features for each principal component
+        for i, top_features in enumerate(top_features):
+            print(f"Top features for PC{i+1}:")
+            print(top_features)
         #idx = eigenvalues.argsort()[-num_cols:][::-1]
-
+        '''
         #idx = eigenvalues.argsort()[::-1]
 
         #print(eigenvectors[:, idx])
@@ -372,6 +401,10 @@ class aew():
         #print(eigenvectors[:, idx])
 
         #return eigenvectors[:, idx].real
+
+        #print(pca)
+
+        #print(pca.real)
 
         return pca.real
 

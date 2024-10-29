@@ -241,7 +241,7 @@ class clustering():
         for cov_type in hyperparams['covariance_type']:
             for init_par in hyperparams['init_params']:
                 for n_comp in hyperparams['n_components']:
-                    clustering = mixture.GaussianMixture(n_components=n_comp, covariance_type=cov_type, reg_covar=1*10^5, init_params=init_par)
+                    clustering = mixture.GaussianMixture(n_components=n_comp, covariance_type=cov_type, init_params=init_par)
                     self.cluster_evaluation('gaussianmixture', (cov_type, init_par, n_comp), clustering)
                                 
     def cluster_evaluation(self, alg, hyperparameters, model):

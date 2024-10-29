@@ -100,8 +100,8 @@ class data():
 
     def load_data(self, datapath, data_type):
         if data_type == 'train':
-            self.train_data = pd.read_csv(datapath).head(800)
-            self.train_data = self.train_data
+            self.train_data = pd.read_csv(datapath).tail(800)
+            #self.train_data = self.train_data
         elif data_type == 'test':
             self.test_data = pd.read_csv(datapath)
 
@@ -179,7 +179,18 @@ class data():
             timing[name] = time() - start_time
 
         return projections, timing 
-    
+
+    def remove_disconnections(self):
+
+
+
+
+        self.train_data = self.train_data[(self.train_data != 0).any(axis=1)]
+        self.test_data = self.test_data.loc[:, (self.test_data != 0).any(axis=0)]
+        self.test_data = self.test_data.loc[:, (self.test_data != 0).any(axis=0)]
+
+
+
     def generate_graphs(self, data_type):
         if data_type == 'train':
             self.train_graph = kneighbors_graph(self.train_data, n_neighbors=(len(self.train_data)-1), mode='connectivity', metric='euclidean', p=2, include_self=True, n_jobs=-1)
