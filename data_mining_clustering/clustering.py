@@ -90,8 +90,8 @@ class clustering():
                 'Kmeans': {'k_means_alg': ('lloyd', 'elkan'),
                            'n_clusters' : [2, 3, 4, 5], #, 6, 7, 8, 9, 10, 15, 20]
                 },
-                'Spectral': {'n_clusters': [2, 3, 4, 5], #, 6, 7, 8, 9, 10, 15, 20],
-                             'affinity': 'rbf',#, 'precomputed', 'precomputed_nearest_neighbors'),
+                'Spectral': {'n_clusters': [2, 3, 4, 5, 6, 7, 8, 9], #, 10, 15, 20],
+                             'affinity': ('nearest_neighbors', 'rbf', 'precomputed', 'precomputed_nearest_neighbors'),
                              'assign_labels': ('kmeans', 'discretize', 'cluster_qr'),
                              'workers': self.workers
                 },
@@ -117,7 +117,7 @@ class clustering():
                           'threshold': [.03, .05]
                 },
                 'BisectingKmeans': {'k_means_alg': ('lloyd', 'elkan'),
-                                    'n_clusters' : [2, 3, 4, 5, 6], #, 7, 8, 9, 10, 15, 20],
+                                    'n_clusters' : [2, 3, 4, 5], #, 7, 8, 9, 10, 15, 20],
                                     'bisecting_strategy': ('biggest_inertia', 'largest_cluster')
                 },
                 'GaussianMixture': {'n_components' : [2,3,4,5],
@@ -473,11 +473,11 @@ class clustering():
                    
             #print(X)
     
-            bandwidth = cluster.estimate_bandwidth(X, quantile=params["quantile"])
+            bandwidth = cluster.estimate_bandwidth(X_aew, quantile=params["quantile"])
 
             # connectivity matrix for structured Ward
             connectivity = kneighbors_graph(
-             X, n_neighbors=params["n_neighbors"], include_self=False
+             X_aew, n_neighbors=params["n_neighbors"], include_self=False
             )
             # make connectivity symmetric
             connectivity = 0.5 * (connectivity + connectivity.T)
@@ -643,7 +643,7 @@ class clustering():
                 if hasattr(algorithm, "labels_"):
                     y_pred = algorithm.labels_.astype(int)
                 else:
-                    y_pred = algorithm.predict(X)
+                    y_pred = algorithm.predict(X_aew)
                 #print(X)
 
                 plt.subplot(len(datasets), len(clustering_algorithms), plot_num)
@@ -674,7 +674,7 @@ class clustering():
                 )
                 # add black color for outliers (if any)
                 colors = np.append(colors, ["#000000"])
-                plt.scatter(X[:, 0], X[:, 1], s=10, color=colors[y_pred])
+                plt.scatter(X_aew[:, 0], X_aew[:, 1], s=10, color=colors[y_pred])
 
                 plt.title(accuracy_score(y,y_pred))
                 plt.xlim(-3, 3)

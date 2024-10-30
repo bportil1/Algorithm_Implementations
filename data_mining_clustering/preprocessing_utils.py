@@ -32,18 +32,28 @@ class data():
         self.similarity_matrix = None
 
     def scale_data(self, scaling):
-        cols = self.train_data.loc[:, ~self.train_data.columns.isin(['protocol_type', 'service', 'flag'])].columns
-        #print(cols)
+        cols = self.train_data.loc[:, ~self.train_data.columns.isin(['flag',
+                                                                     'land', 'wrong_fragment', 'urgent',
+                                                                     'num_failed_logins', 'logged_in',
+                                                                     'root_shell', 'su_attempted', 'num_shells',
+                                                                     'num_access_files', 'num_outbound_cmds',
+                                                                     'is_host_login', 'is_guest_login', 'serror_rate',                                                                     'srv_serror_rate', 'rerror_rate', 'srv_rerror_rate',                                                                  'same_srv_rate', 'diff_srv_rate',
+                                                                     'srv_diff_host_rate', 'dst_host_same_srv_rate',
+                                                                     'dst_host_diff_srv_rate', 'dst_host_same_src_port_rate',                                                              'dst_host_srv_diff_host_rate', 'dst_host_serror_rate',                                                                'dst_host_srv_serror_rate', 'dst_host_rerror_rate',                                                                   'dst_host_srv_rerror_rate', 'protocol_type ', 'service ' ])].columns
+        cols = np.asarray(cols)
+        print(self.train_data.columns)
+        print(cols)
         if scaling == 'standard':
-            ct = ColumnTransformer([('scaler', StandardScaler(), cols)],
+            ct = ColumnTransformer([('normalize', StandardScaler(), cols)],
                                     remainder='passthrough' 
                                   )
             
             #self.train_data[[col for col in self.train_data]] = StandardScaler().fit_transform(self.train_data[[col for col in self.train_data]])
             
             #self.train_data.loc[:, self.train_data.columns not in ['protocol_type', 'service', 'flag']] = StandardScaler().fit_transform(self.train_data.loc[:, self.train_data.columns not in ['protocol_type', 'service', 'flag']])
-            
-            self.train_data = pd.DataFrame(ct.fit_transform(self.train_data), columns = self.train_data.columns)
+            transformed_cols = ct.fit_transform(self.train_data)
+
+            self.train_data = pd.DataFrame(transformed_cols, columns = self.train_data.columns)
             if not self.test_data.empty:
                 #self.test_data[[col for col in self.test_data]] = StandardScaler().fit_transform(self.test_data[[col for col in self.test_data]])
                 
@@ -54,7 +64,7 @@ class data():
 
         elif scaling == 'min_max':
             #min_max_scaler = MinMaxScaler()
-            ct = ColumnTransformer([('scaler', MinMaxScaler(), cols)],
+            ct = ColumnTransformer([('normalize', MinMaxScaler(), cols)],
                                     remainder='passthrough'  
                                   ) 
 
@@ -62,12 +72,16 @@ class data():
             #self.train_data.loc[:, self.train_data.columns not in ['protocol_type', 'service', 'flag']] = StandardScaler().fit_transform(self.train_data.loc[:, self.train_data.columns not in ['protocol_type', 'service', 'flag']])   
             #self.train_data[[col for col in self.train_data]] = min_max_scaler.fit_transform(self.train_data[[col for col in self.train_data]])
             
+            transformed_cols = ct.fit_transform(self.train_data)
+            self.train_data = pd.DataFrame(transformed_cols, columns = self.train_data.columns)
 
-            self.train_data = pd.DataFrame(ct.fit_transform(self.train_data), columns = self.train_data.columns)
+            print(self.test_data.empty)
 
             if not self.test_data.empty:
                 #self.test_data[[col for col in self.test_data]] = min_max_scaler.fit_transform(self.test_data[[col for col in self.test_data]])
-                self.test_data = pd.DataFrame(ct.fit_transform(self.test_data), columns = self.test_data.columns)
+                transformed_cols = ct.fit_transform(self.test_data)
+
+                self.test_data = pd.DataFrame(transformed_cols, columns = self.test_data.columns)
 
 
         #self.test_data.loc[:, self.test_data.columns not in ['protocol_type', 'service', 'flag']] = StandardScaler().fit_transform(self.test_data.loc[:, self.test_data.columns not in ['protocol_type', 'service', 'flag']])
@@ -100,7 +114,8 @@ class data():
 
     def load_data(self, datapath, data_type):
         if data_type == 'train':
-            self.train_data = pd.read_csv(datapath).tail(5000)
+            self.train_data = pd.read_csv(datapath)
+            self.train_data = self.train_data.sample(800)
             #self.train_data = self.train_data
         elif data_type == 'test':
             self.test_data = pd.read_csv(datapath)

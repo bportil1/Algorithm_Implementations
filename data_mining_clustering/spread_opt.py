@@ -87,32 +87,8 @@ class aew():
         
         for feature in range(len(point2[0])):
 
-            #print(point1[0], " ", point2[0], " ", self.gamma[feature])
-
-            #print((point1[0][feature] - point2[0][feature]) ** 2 , " ", (self.gamma[feature]) ** 2)
-
-            temp_res += ((point1[0][feature] - point2[0][feature]) ** 2) / ( 2*((self.gamma[feature]) ** 2))
+            temp_res += ((point1[0][feature] - point2[0][feature]) ** 2) / (((self.gamma[feature]) ** 2))
        
-            #print(temp_res)
-
-        #print(np.exp(-temp_res, dtype=np.longdouble))
-
-        '''
-        distance = np.linalg.norm(point1 - point2)
-
-        print(-(distance ** 2), " ", 2 * self.gamma ** 2)
-
-
-        print(np.exp(-(distance ** 2) / (2 * self.gamma ** 2)) )
-
-        #print(temp_res, " ", np.exp(-temp_res, dtype=np.longdouble))
-
-        print("returning")
-
-        return np.exp(-(distance ** 2) / (2 * self.gamma ** 2)) 
-        '''
-        #print('returning')
-
         return np.exp(-temp_res, dtype=np.longdouble)
 
     def objective_computation(self, section):
@@ -131,7 +107,7 @@ class aew():
             else:
                 temp_sum = np.zeros(len(self.gamma))
             approx_error += np.abs((np.asarray(self.data.loc[[idx]]) - temp_sum)**2)
-        return np.sqrt(approx_error)
+        return approx_error
 
     def objective_function(self):
         errors = []
@@ -143,7 +119,7 @@ class aew():
                                                                  for section in split_data]
 
             error = [error.get() for error in errors]
-        return np.sum(error)
+        return np.sqrt(np.sum(error))
 
     def gradient_computation(self, section):
         gradient = np.zeros(len(self.gamma))
@@ -162,9 +138,10 @@ class aew():
                 wij = self.similarity_function(idx, vertex)                
                 dii += wij
                 for feature_idx in range(len(self.gamma)):
-                    diff = np.abs(point1[0][feature_idx] - point2[0][feature_idx])**2
+                    #diff = np.abs(point1[0][feature_idx] - point2[0][feature_idx])**2
+                    diff = (point1[0][feature_idx] - point2[0][feature_idx])**2
                     gamma_term = self.gamma[feature_idx]**(-3)
-                    gradient_vector[feature_idx] = diff * gamma_term * 2 * wij        
+                    gradient_vector[feature_idx] += diff * gamma_term * 2 * wij        
                 x_hat = x_hat + (wij * point2)    
             if dii > 0 and not isclose(dii, 0, abs_tol=1e-9):
                 x_hat = np.divide(x_hat, dii, casting='unsafe', dtype=np.longdouble)
@@ -174,7 +151,9 @@ class aew():
                 leading_term_2 = np.zeros(len(point2[0]))
             sec_term_1 = np.multiply(gradient_vector, point2)
             sec_term_2 = np.multiply(gradient_vector, x_hat)
-            gradient = gradient + (leading_term_2[0].transpose().tolist() * (sec_term_1[0] - sec_term_2[0]))
+            #gradient = gradient + (leading_term_2[0].transpose().tolist() * (sec_term_1[0] - sec_term_2[0]))
+            gradient = gradient + (leading_term_2[0] * (sec_term_1[0] - sec_term_2[0]))
+
         return gradient
 
     def split(self, a, n):
@@ -228,17 +207,19 @@ class aew():
             if curr_error < tol:
                 break
                 
-            elif self.min_error < curr_error and learning_rate > .001: 
-                learning_rate -= .01 
+            elif self.min_error < curr_error and learning_rate > .00001: 
+                #learning_rate -= .00001 
+                learning_rate *= 2
 
             elif self.min_error - curr_error > 2:
-                learning_rate += .01
+                #learning_rate += .00001
+                learning_rate /= 2
+                
 
             if curr_error < self.min_error:
                 self.min_error = curr_error
             print("Gamma: ", self.gamma)
             self.gamma = self.gamma + (gradient * learning_rate)
-            self.gamma = self.gamma
             print("Updated Gamma: ", self.gamma)
     
             print("Updated Learning Rate: ", learning_rate)
@@ -247,7 +228,9 @@ class aew():
     def generate_optimal_edge_weights(self, num_iterations):
         print("Generating Optimal Edge Weights")
 
-        self.gradient_descent(.05, num_iterations, .01)
+        #self.gradient_descent(.0002, num_iterations, .01)
+
+        self.gradient_descent(50, num_iterations, .01)
 
         self.generate_edge_weights()
     
@@ -257,16 +240,8 @@ class aew():
 
         for idx in section:
             point = slice(self.data_graph.indptr[idx], self.data_graph.indptr[idx+1])
-
-            point1 = np.asarray(self.data.loc[[idx]])
-
             for vertex in self.data_graph.indices[point]:
-
-                #print(idx," ",vertex, " ", self.similarity_function(idx, vertex))
-
                 res.append((idx, vertex, self.similarity_function(idx, vertex)))
-
-        
 
         return res
 
@@ -286,9 +261,9 @@ class aew():
 
         for section in edge_weights:
             for weight in section:
-                #print(weight)
-                self.similarity_matrix[weight[0]][weight[1]] = weight[2]
-                self.similarity_matrix[weight[1]][weight[0]] = weight[2]
+                if weight[0] != weight[1]:
+                    self.similarity_matrix[weight[0]][weight[1]] = weight[2]
+                    self.similarity_matrix[weight[1]][weight[0]] = weight[2]
 
         #print(len(self.similarity_matrix))
         #print(len(self.similarity_matrix[0]))
@@ -365,7 +340,7 @@ class aew():
         return matrix/norms
 
     def get_eigenvectors(self):
-        eigenvalues, eigenvectors = np.linalg.eig(self.similarity_matrix)
+        #eigenvalues, eigenvectors = np.linalg.eig(self.similarity_matrix)
         #print(eigenvalues/sum(eigenvalues))
         
         pca = PCA()
@@ -392,7 +367,7 @@ class aew():
 
         #print(pca.fit(self.similarity_matrix).singular_values_)
 
-        pca = PCA(n_components=2)
+        pca = PCA(n_components=num_components)
 
         pca = pca.fit_transform(self.similarity_matrix)
 

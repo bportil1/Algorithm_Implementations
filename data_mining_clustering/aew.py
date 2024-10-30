@@ -6,17 +6,17 @@ from sklearn.metrics import accuracy_score
 
 
 if __name__ == '__main__':
-    ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
+    #ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
 
-    #ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
+    ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
 
     #ids_train_file = '/home/bryanportillo_lt/Documents/py_env/venv/network_intrusion_dataset/Train_data.csv'
     
-    synth_clust = clustering()
+    #synth_clust = clustering()
 
-    synth_clust.synthetic_data_tester()
+    #synth_clust.synthetic_data_tester()
 
-    '''
+    
     data_obj = data()
 
     data_obj.load_data(ids_train_file, 'train')
@@ -33,30 +33,24 @@ if __name__ == '__main__':
 
     data_obj.encode_categorical('class', 'labels')
    
-    #print(data_obj.train_data.tail(5))
+    print(data_obj.train_data.tail(10))
     #print(data_obj.train_labels.tail(5))
 
     data_obj.scale_data('min_max')
+
+    print(data_obj.train_data.tail(10))
 
     init_path = './results/orig_data_visualization/'
 
     os.makedirs(init_path, exist_ok=True)
 
-    data_obj.lower_dimensional_embedding(data_obj.train_data, 'train', 'Original Train Data: 3-Dimensions', init_path)
+    #data_obj.lower_dimensional_embedding(data_obj.train_data, 'train', 'Original Train Data: 3-Dimensions', init_path)
 
-    data_obj.lower_dimensional_embedding(data_obj.test_data, 'test', 'Original Test Data: 3-Dimensions', init_path)
+    #data_obj.lower_dimensional_embedding(data_obj.test_data, 'test', 'Original Test Data: 3-Dimensions', init_path)
 
     data_obj.generate_graphs('train')
 
     data_obj.generate_graphs('test')
-
-    #print(data_obj.train_data.tail(5))
-    #print(data_obj.train_labels.tail(5))
-    #print(data_obj.test_data.tail(5))
-    #print(data_obj.test_labels.tail(5))
-
-    #print(data_obj.train_graph)
-    #print(data_obj.test_graph)
 
     init_path = './results/plain_data/'
 
@@ -70,9 +64,9 @@ if __name__ == '__main__':
                                    'GaussianMixture'
                                    ]
 
-    #data_obj.lower_dimensional_embedding(data_obj.train_graph ,'train', 'Original Train Graph: 3-Dimensions', init_path)
+    data_obj.lower_dimensional_embedding(data_obj.train_graph ,'train', 'Original Train Graph: 3-Dimensions', init_path)
 
-    #data_obj.lower_dimensional_embedding(data_obj.test_graph, 'test', 'Original Test Graph: 3-Dimensions', init_path)
+    data_obj.lower_dimensional_embedding(data_obj.test_graph, 'test', 'Original Test Graph: 3-Dimensions', init_path)
     
     #plain_clustering = clustering(data_obj.train_data, data_obj.train_labels, data_obj.test_data, data_obj.test_labels, "full", "40_dim_no_proj", clustering_methods=clustering_meths, workers = -1)
 
@@ -80,17 +74,21 @@ if __name__ == '__main__':
         
     #prec_gamma = np.ones(data_obj.train_data.loc[[0]].shape[1]) * .15 
     
-    prec_gamma = np.asarray( [0.15,       0.15,       0.08022834, 0.12596744, 0.14999965, 0.14999928,
- 0.15,       0.15,       0.15,       0.14995772, 0.15,       0.15,
- 0.15,       0.15,       0.15,       0.15,       0.15,       0.15,
- 0.1440897,  0.15,       0.15,       0.15,       0.07526867, 0.12220272,
- 0.13014209, 0.1322162,  0.1406977,  0.14065416, 0.09846964, 0.1373013,
- 0.06716577, 0.07199228, 0.11924177, 0.13586606, 0.14487602, 0.11904342,
- 0.14467075, 0.14900498, 0.14499863, 0.135036538, 0.12360249] )
+    prec_gamma = np.asarray([ 7.81208069e-01,  2.57717251e+00,  2.21445759e-03,  1.12187659e-01,
+  3.66821792e-01, -1.27468336e+00, -1.77084646e+00, -3.48676732e+00,
+ -7.44862481e+00, -9.71866534e-02,  1.39585665e+00,  1.50783319e+01,
+  8.62146955e+00,  2.49038409e+02,  1.50000000e-01, -3.73377164e+00,
+  1.50000000e-01,  1.50000000e-01,  1.44089700e-01,  6.93140020e+00,
+  7.20963665e+00,  1.35808153e+00,  1.47847436e+01,  8.02213930e-01,
+  4.95888870e-01,  1.97528620e+01, -2.03215736e+00,  1.89510767e+00,
+  3.09357542e+01,  1.27994138e+01,  1.97827058e+00,  3.90163262e-01,
+  9.28141015e+00, -1.71898369e-01,  2.48269948e+01,  1.81486444e+00,
+  1.73213478e+00,  3.65662961e+00,  1.45618721e+01,  1.12782909e+01,
+  2.87854455e+01] )
 
     aew_train = aew(data_obj.train_graph, data_obj.train_data, data_obj.train_labels, prec_gamma)
 
-    aew_train.generate_optimal_edge_weights(3)
+    aew_train.generate_optimal_edge_weights(1000)
 
     #aew_train.generate_edge_weights()
 
@@ -110,29 +108,28 @@ if __name__ == '__main__':
 
     #print(len(aew_test.similarity_matrix))
 
-
     
-    clustering_with_adj_matr_prec_kmeans = SpectralClustering(n_clusters=2, affinity='nearest_neighbors', assign_labels='kmeans', n_jobs=-1)
+    clustering_with_adj_matr_prec_kmeans = SpectralClustering(n_clusters=8, affinity='nearest_neighbors', assign_labels='kmeans', n_jobs=-1)
 
     print("Kmeans Train: ", accuracy_score(clustering_with_adj_matr_prec_kmeans.fit_predict(aew_train.similarity_matrix), aew_train.labels))
 
-    clustering_with_adj_matr_prec_disc = SpectralClustering(n_clusters=2, affinity='nearest_neighbors', assign_labels='discretize', n_jobs=-1)
+    clustering_with_adj_matr_prec_disc = SpectralClustering(n_clusters=8, affinity='nearest_neighbors', assign_labels='discretize', n_jobs=-1)
 
     print("Discretize Train: ", accuracy_score(clustering_with_adj_matr_prec_disc.fit_predict(aew_train.similarity_matrix), aew_train.labels))
 
-    clustering_with_adj_matr_prec_clust = SpectralClustering(n_clusters=2, affinity='nearest_neighbors', assign_labels='cluster_qr', n_jobs=-1)
+    clustering_with_adj_matr_prec_clust = SpectralClustering(n_clusters=8, affinity='nearest_neighbors', assign_labels='cluster_qr', n_jobs=-1)
 
     print("Cluster_qr Train: ", accuracy_score(clustering_with_adj_matr_prec_clust.fit_predict(aew_train.similarity_matrix), aew_train.labels))
 
-    clustering_with_adj_matr_prec_kmeans1 = SpectralClustering(n_clusters=2, affinity='nearest_neighbors', assign_labels='kmeans', n_jobs=-1)
+    clustering_with_adj_matr_prec_kmeans1 = SpectralClustering(n_clusters=8, affinity='nearest_neighbors', assign_labels='kmeans', n_jobs=-1)
 
     print("Kmeans Test: ", accuracy_score(clustering_with_adj_matr_prec_kmeans.fit_predict(aew_test.similarity_matrix), aew_test.labels))
 
-    clustering_with_adj_matr_prec_disc1 = SpectralClustering(n_clusters=2, affinity='nearest_neighbors', assign_labels='discretize', n_jobs=-1)
+    clustering_with_adj_matr_prec_disc1 = SpectralClustering(n_clusters=8, affinity='nearest_neighbors', assign_labels='discretize', n_jobs=-1)
 
     print("Discretize Test: ", accuracy_score(clustering_with_adj_matr_prec_disc.fit_predict(aew_test.similarity_matrix), aew_test.labels))
 
-    clustering_with_adj_matr_prec_clust1 = SpectralClustering(n_clusters=2, affinity='nearest_neighbors', assign_labels='cluster_qr', n_jobs=-1)
+    clustering_with_adj_matr_prec_clust1 = SpectralClustering(n_clusters=8, affinity='nearest_neighbors', assign_labels='cluster_qr', n_jobs=-1)
 
     print("Cluster_qr Test: ", accuracy_score(clustering_with_adj_matr_prec_clust.fit_predict(aew_test.similarity_matrix), aew_test.labels))
     
@@ -140,7 +137,7 @@ if __name__ == '__main__':
 
     plain_graph_clustering.generate_clustering()
 
-    num_components = [3] #, 11, 12, 13, 14, 15, 16, 18, 20, 25, 30, 35, 40]
+    num_components = [3, 8, 12, 15, 20, 40]
 
     for num_comp in num_components:
 
@@ -166,4 +163,4 @@ if __name__ == '__main__':
             clustering_graph_data = clustering(data_obj.train_projection[projection], data_obj.train_labels, data_obj.test_projection[projection], data_obj.test_labels, num_comp, projection, clustering_methods=clustering_meths, workers = -1)
 
             clustering_graph_data.generate_clustering()
-    '''
+    
