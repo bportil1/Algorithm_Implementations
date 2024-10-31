@@ -21,7 +21,7 @@ class aew():
         self.eigenvectors = None
 
         if self.gamma.shape == (0,0):
-            self.gamma = np.ones(41)
+            self.gamma = np.ones(self.data.loc[[0]].shape[1])
 
     def normalization_computation(self, section):
         res = []
@@ -45,8 +45,12 @@ class aew():
         for section in edge_weights:
             for weight in section:
                 if weight[0] != weight[1]:
-                    self.similarity_matrix[weight[0]][weight[1]] = weight[2]
-                    self.similarity_matrix[weight[1]][weight[0]] = weight[2]
+                    if weight[2] < 1*10**(-15):
+                        self.similarity_matrix[weight[0]][weight[1]] = 0
+                        self.similarity_matrix[weight[1]][weight[0]] = 0
+                    else:
+                        self.similarity_matrix[weight[0]][weight[1]] = weight[2]
+                        self.similarity_matrix[weight[1]][weight[0]] = weight[2]
         del edge_weights, edge_weight_res
 
     def laplacian_normalization(self):
@@ -64,7 +68,7 @@ class aew():
                 curr_end = len(self.similarity_matrix[0])
 
             split_data = self.split(range(curr_start, curr_end), cpu_count())
-    
+            print(split_data)
             self.normalization_parallel_caller(split_data)
 
             curr_start = curr_end
@@ -79,17 +83,12 @@ class aew():
 
         #print("in similarity fcn")
         
-        #print(pt1_idx, "point 1: ", point1)
+        #print(pt1_idx, "point 1: ", point1)        
+        euc_dist = np.sum((point1 - point2)**2)
 
-        #print(pt2_idx, "point 2: ", point2)
+        gamma_term = 2 * self.gamma ** 2
 
-        #print("dipping similarity_fcn")
-        
-        for feature in range(len(point2[0])):
-
-            temp_res += ((point1[0][feature] - point2[0][feature]) ** 2) / (((self.gamma[feature]) ** 2))
-       
-        return np.exp(-temp_res, dtype=np.longdouble)
+        return np.exp(euc_dist/gamma_term, dtype=np.longdouble)
 
     def objective_computation(self, section):
         approx_error = 0
@@ -104,9 +103,24 @@ class aew():
                 temp_sum = temp_sum + (wij * np.asarray(self.data.loc[[vertex]]))
             if dii > 0 and not isclose(dii, 0, abs_tol=1e-9):
                 temp_sum /= dii
+                temp_sum = temp_sum[0]
             else:
                 temp_sum = np.zeros(len(self.gamma))
-            approx_error += np.abs((np.asarray(self.data.loc[[idx]]) - temp_sum)**2)
+            #print("ts: ", temp_sum)
+            #print("appr err: ", approx_error)
+
+            xi = np.asarray(self.data.loc[[idx]])[0]
+            #print("xi: ",  xi)
+            for idx2 in range(len(xi)):
+               # print("idx: ", idx2)
+               # print("xi val: ", xi[idx2] )
+               # print("ts : ", temp_sum)
+               # print("ts cvv: ", temp_sum[0][idx2])
+                approx_error += ((xi[idx2] - temp_sum[idx2])**2)
+   
+
+            #approx_error += np.abs((np.asarray(self.data.loc[[idx]]) - temp_sum)**2)
+            #print("sec appr err: ", approx_error)
         return approx_error
 
     def objective_function(self):
@@ -119,7 +133,7 @@ class aew():
                                                                  for section in split_data]
 
             error = [error.get() for error in errors]
-        return np.sqrt(np.sum(error))
+        return np.sum(error)
 
     def gradient_computation(self, section):
         gradient = np.zeros(len(self.gamma))
@@ -151,11 +165,9 @@ class aew():
                 leading_term_2 = np.zeros(len(point2[0]))
             sec_term_1 = np.multiply(gradient_vector, point2)
             sec_term_2 = np.multiply(gradient_vector, x_hat)
-            #gradient = gradient + (leading_term_2[0].transpose().tolist() * (sec_term_1[0] - sec_term_2[0]))
             gradient = gradient + (leading_term_2[0] * (sec_term_1[0] - sec_term_2[0]))
 
         return gradient
-
     def split(self, a, n):
         k, m = divmod(len(a), n)
         return [a[i*k+min(i,m):(i+1)*k+min(i+1,m)] for i in range(n)]
@@ -164,7 +176,7 @@ class aew():
         gradient = []
     
         split_data = self.split(range(self.data_graph.shape[0]), cpu_count())
-
+        #print(split_data)
         with Pool(processes=cpu_count()) as pool:
             gradients = [pool.apply_async(self.gradient_computation, (section, )) \
                                                                  for section in split_data]
@@ -172,8 +184,11 @@ class aew():
             gradients = [gradient.get() for gradient in gradients]
 
         gradient = np.zeros(self.data.loc[[0]].shape[1])
+        #print(gradient)
         for grad in gradients:
             gradient = gradient + grad
+        #print(gradient)
+
 
         return gradient
 
@@ -193,7 +208,7 @@ class aew():
 
     def gradient_descent(self, learning_rate, num_iterations, tol):
         print("Beggining Gradient Descent")
-
+        last_error = -9999999
         # Perform the gradient descent iterations
         for i in range(num_iterations):
             print("Current Iteration: ", str(i+1))
@@ -207,17 +222,17 @@ class aew():
             if curr_error < tol:
                 break
                 
-            elif self.min_error < curr_error and learning_rate > .00001: 
+            elif last_error < curr_error: 
                 #learning_rate -= .00001 
-                learning_rate *= 2
+                learning_rate /= (1.5)
 
-            elif self.min_error - curr_error > 2:
+            elif last_error > curr_error :
                 #learning_rate += .00001
-                learning_rate /= 2
+                learning_rate *= (1.5)
                 
 
-            if curr_error < self.min_error:
-                self.min_error = curr_error
+            #if curr_error < self.min_error:
+            last_error = curr_error
             print("Gamma: ", self.gamma)
             self.gamma = self.gamma + (gradient * learning_rate)
             print("Updated Gamma: ", self.gamma)
@@ -228,9 +243,9 @@ class aew():
     def generate_optimal_edge_weights(self, num_iterations):
         print("Generating Optimal Edge Weights")
 
-        #self.gradient_descent(.0002, num_iterations, .01)
+        self.gradient_descent(.0002, num_iterations, .01)
 
-        self.gradient_descent(50, num_iterations, .01)
+        #self.gradient_descent(50, num_iterations, .01)
 
         self.generate_edge_weights()
     
@@ -261,7 +276,8 @@ class aew():
 
         for section in edge_weights:
             for weight in section:
-                if weight[0] != weight[1]:
+                #print(weight)
+                if weight[0] != weight[1] and weight[2] > 1*(10*-20):
                     self.similarity_matrix[weight[0]][weight[1]] = weight[2]
                     self.similarity_matrix[weight[1]][weight[0]] = weight[2]
 
@@ -293,7 +309,7 @@ class aew():
 
         self.remove_disconnections()
 
-        self.scale_matrix()
+        #self.scale_matrix()
 
         print(np.any(np.sum(self.similarity_matrix, axis=1) < 0))
 
@@ -330,9 +346,9 @@ class aew():
     def remove_disconnections(self):
         empty_rows = np.all(self.similarity_matrix == 0, axis = 1)
         empty_cols = np.all(self.similarity_matrix == 0, axis = 0)
-
+        print(self.similarity_matrix[:5])
         self.similarity_matrix = self.similarity_matrix[~empty_rows, :][:, ~empty_cols]
-    
+        print(self.similarity_matrix[:5])
         self.labels = self.labels.loc[~empty_rows]
 
     def unit_normalization(self, matrix):
@@ -348,7 +364,7 @@ class aew():
         pca.fit(self.similarity_matrix)
 
         expl_var = pca.explained_variance_ratio_
-
+        print(expl_var)
         cum_variance = expl_var.cumsum()
 
         desired_variance = 0.90

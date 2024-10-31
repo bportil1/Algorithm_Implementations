@@ -86,7 +86,7 @@ if __name__ == '__main__':
   1.73213478e+00,  3.65662961e+00,  1.45618721e+01,  1.12782909e+01,
   2.87854455e+01] )
 
-    aew_train = aew(data_obj.train_graph, data_obj.train_data, data_obj.train_labels, prec_gamma)
+    aew_train = aew(data_obj.train_graph, data_obj.train_data, data_obj.train_labels) #, prec_gamma)
 
     aew_train.generate_optimal_edge_weights(1000)
 
