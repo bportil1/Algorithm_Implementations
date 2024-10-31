@@ -41,8 +41,8 @@ class data():
                                                                      'srv_diff_host_rate', 'dst_host_same_srv_rate',
                                                                      'dst_host_diff_srv_rate', 'dst_host_same_src_port_rate',                                                              'dst_host_srv_diff_host_rate', 'dst_host_serror_rate',                                                                'dst_host_srv_serror_rate', 'dst_host_rerror_rate',                                                                   'dst_host_srv_rerror_rate', 'protocol_type ', 'service ' ])].columns
         cols = np.asarray(cols)
-        print(self.train_data.columns)
-        print(cols)
+        #print(self.train_data.columns)
+        #print(cols)
         if scaling == 'standard':
             ct = ColumnTransformer([('normalize', StandardScaler(), cols)],
                                     remainder='passthrough' 
@@ -75,7 +75,7 @@ class data():
             transformed_cols = ct.fit_transform(self.train_data)
             self.train_data = pd.DataFrame(transformed_cols, columns = self.train_data.columns)
 
-            print(self.test_data.empty)
+            #print(self.test_data.empty)
 
             if not self.test_data.empty:
                 #self.test_data[[col for col in self.test_data]] = min_max_scaler.fit_transform(self.test_data[[col for col in self.test_data]])
@@ -203,9 +203,9 @@ class data():
 
     def generate_graphs(self, data_type):
         if data_type == 'train':
-            self.train_graph = kneighbors_graph(self.train_data, n_neighbors=(len(self.train_data)-1), mode='connectivity', metric='euclidean', p=2, include_self=False, n_jobs=-1)
+            self.train_graph = kneighbors_graph(self.train_data, n_neighbors=150, mode='distance', metric='euclidean', p=2, include_self=True, n_jobs=-1)
         elif data_type == 'test':
-            self.test_graph = kneighbors_graph(self.test_data, n_neighbors=(len(self.test_data)-1), mode='connectivity', metric='euclidean', p=2, include_self=False, n_jobs=-1)
+            self.test_graph = kneighbors_graph(self.test_data, n_neighbors=150, mode='distance', metric='euclidean', p=2, include_self=True, n_jobs=-1)
             
     def lower_dimensional_embedding(self, data, data_type, passed_title, path):
         if data_type == 'train':

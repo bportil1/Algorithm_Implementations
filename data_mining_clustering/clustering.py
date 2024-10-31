@@ -333,9 +333,9 @@ class clustering():
 
         labels_pred = pd.DataFrame(labels_pred, columns=['class'])
 
-        data_obj = data(test_labels=labels_pred)
+        #data_obj = data(test_labels=labels_pred)
 
-        data_obj.lower_dimensional_embedding(self.test_data, 'test', filename_base, vis_file_name)
+        #data_obj.lower_dimensional_embedding(self.test_data, 'test', filename_base, vis_file_name)
 
     def synthetic_data_tester(self):
 

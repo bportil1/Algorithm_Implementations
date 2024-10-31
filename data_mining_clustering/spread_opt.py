@@ -12,9 +12,30 @@ from sklearn.preprocessing import MinMaxScaler
 class aew():
     def __init__(self, data_graph, data, labels, precomputed_gamma=np.empty((0,0))):
 
-        self.similarity_matrix = np.zeros((data_graph.shape[0], data_graph.shape[0]))
+        #self.similarity_matrix = np.zeros((data.shape[0], data.shape[0]))
+
+        #print(data.shape[0])
+        #print(len(self.similarity_matrix[0]))
+        #identity = np.zeros((len(self.similarity_matrix[0]), len(self.similarity_matrix[0])))
+        #identity_diag = np.diag(identity)
+        #identity_diag_res = identity_diag + 1
+        #np.fill_diagonal(self.similarity_matrix, identity_diag_res)
+
+        #print(self.similarity_matrix[:5][:5])
+
         self.gamma = precomputed_gamma
         self.data_graph = data_graph
+
+        #print(self.data_graph.toarray()[:5][:5])
+        
+        self.similarity_matrix = self.data_graph.toarray()
+        identity = np.zeros((data.shape[0], data.shape[0]))
+        identity_diag = np.diag(identity)
+        identity_diag_res = identity_diag + 1
+        np.fill_diagonal(self.similarity_matrix, identity_diag_res)
+
+        #print(self.similarity_matrix[:5][:5])
+
         self.data = data
         self.labels = labels
         self.min_error = float('inf')
@@ -23,111 +44,47 @@ class aew():
         if self.gamma.shape == (0,0):
             self.gamma = np.ones(self.data.loc[[0]].shape[1])
 
-    def normalization_computation(self, section):
-        res = []
-        for x in section:
-            for y in range(len(self.similarity_matrix[0])):
-                x_sum = np.sum(self.similarity_matrix[x])
-                y_sum = np.sum(self.similarity_matrix[y])
-                if (x_sum > 0 and y_sum > 0) and (not isclose(x_sum, 0, abs_tol=1e-9) and not isclose(y_sum, 0, abs_tol=1e-9)):
-                    res.append((x, y, self.similarity_matrix[x][y] / np.sqrt(x_sum * y_sum)))
-                else:
-                    res.append((x, y, 0))
-        return res
-
-    def normalization_parallel_caller(self, split_data):
-
-        with Pool(processes=cpu_count()) as pool:
-            edge_weight_res = [pool.apply_async(self.normalization_computation, (section, )) for section in split_data]
-
-            edge_weights = [edge_weight.get() for edge_weight in edge_weight_res]
-
-        for section in edge_weights:
-            for weight in section:
-                if weight[0] != weight[1]:
-                    if weight[2] < 1*10**(-15):
-                        self.similarity_matrix[weight[0]][weight[1]] = 0
-                        self.similarity_matrix[weight[1]][weight[0]] = 0
-                    else:
-                        self.similarity_matrix[weight[0]][weight[1]] = weight[2]
-                        self.similarity_matrix[weight[1]][weight[0]] = weight[2]
-        del edge_weights, edge_weight_res
-
-    def laplacian_normalization(self):
-        print("Normalizing Edge Weights")
-
-        divisor = ceil(len(self.similarity_matrix[0]) / 32)
-
-        curr_start = 0
-
-        for idx in range(1, 33):
-
-            if (divisor * idx) <= len(self.similarity_matrix[0]):
-                curr_end = divisor * idx
-            else:
-                curr_end = len(self.similarity_matrix[0])
-
-            split_data = self.split(range(curr_start, curr_end), cpu_count())
-            print(split_data)
-            self.normalization_parallel_caller(split_data)
-
-            curr_start = curr_end
-
-        print("Finished Normalizing Edge Weights")        
-
-    def similarity_function(self, pt1_idx, pt2_idx):
-        point1 = np.asarray(self.data.loc[[pt1_idx]])
-        point2 = np.asarray(self.data.loc[[pt2_idx]])
+    def similarity_function(self, pt1_idx, pt2_idx): # -> Computation accuracy verified
+        point1 = np.asarray(self.data.loc[[pt1_idx]])[0]
+        point2 = np.asarray(self.data.loc[[pt2_idx]])[0]
 
         temp_res = 0
 
-        #print("in similarity fcn")
+        deg_pt1 = np.sum(self.similarity_matrix[pt1_idx])
+        deg_pt2 = np.sum(self.similarity_matrix[pt2_idx])
+               
+        similarity_measure = np.sum(((point1 - point2)**2)/(self.gamma **2))
         
-        #print(pt1_idx, "point 1: ", point1)        
-        euc_dist = np.sum((point1 - point2)**2)
+        similarity_measure = np.exp(-similarity_measure, dtype=np.longdouble)
 
-        gamma_term = 2 * self.gamma ** 2
+        #print("Sim meas: ", similarity_measure)
 
-        return np.exp(euc_dist/gamma_term, dtype=np.longdouble)
+        degree_normalization_term = np.sqrt(np.abs(deg_pt1 * deg_pt2))
+
+        #print("deg norm _term: ", degree_normalization_term)
+
+        ##May need to relax this bound
+        if degree_normalization_term != 0 and not isclose(degree_normalization_term, 0, abs_tol=1e-100):
+            return similarity_measure / degree_normalization_term
+        else:
+            return 0
 
     def objective_computation(self, section):
         approx_error = 0
         for idx in section:
-            points = slice(self.data_graph.indptr[idx], self.data_graph.indptr[idx+1])
-            dii = 0
-            x_hat = 0
-            temp_sum = 0
-            for vertex in self.data_graph.indices[points]:
-                wij = self.similarity_function(idx, vertex)
-                dii += wij
-                temp_sum = temp_sum + (wij * np.asarray(self.data.loc[[vertex]]))
-            if dii > 0 and not isclose(dii, 0, abs_tol=1e-9):
-                temp_sum /= dii
-                temp_sum = temp_sum[0]
+            degree_idx = np.sum(self.similarity_matrix[idx])
+            xi_reconstruction = np.sum([self.similarity_matrix[idx][y]*np.asarray(self.data.loc[[y]])[0] for y in range(len(self.similarity_matrix[idx])) if idx != y], 0)            
+
+            if degree_idx != 0 and not isclose(degree_idx, 0, abs_tol=1e-100):
+                xi_reconstruction /= degree_idx
+                xi_reconstruction = xi_reconstruction[0]
             else:
-                temp_sum = np.zeros(len(self.gamma))
-            #print("ts: ", temp_sum)
-            #print("appr err: ", approx_error)
+                xi_reconstruction = np.zeros(len(self.gamma))
 
-            xi = np.asarray(self.data.loc[[idx]])[0]
-            #print("xi: ",  xi)
-            for idx2 in range(len(xi)):
-               # print("idx: ", idx2)
-               # print("xi val: ", xi[idx2] )
-               # print("ts : ", temp_sum)
-               # print("ts cvv: ", temp_sum[0][idx2])
-                approx_error += ((xi[idx2] - temp_sum[idx2])**2)
-   
-
-            #approx_error += np.abs((np.asarray(self.data.loc[[idx]]) - temp_sum)**2)
-            #print("sec appr err: ", approx_error)
-        return approx_error
+        return np.sum((np.asarray(self.data.loc[[idx]])[0] - xi_reconstruction)**2)
 
     def objective_function(self):
-        errors = []
-
-        split_data = self.split(range(self.data_graph.shape[0]), cpu_count())
-
+        split_data = self.split(range(self.data.shape[0]), cpu_count())
         with Pool(processes=cpu_count()) as pool:
             errors = [pool.apply_async(self.objective_computation, (section, )) \
                                                                  for section in split_data]
@@ -138,36 +95,35 @@ class aew():
     def gradient_computation(self, section):
         gradient = np.zeros(len(self.gamma))
         for idx in section:
-            points = slice(self.data_graph.indptr[idx], self.data_graph.indptr[idx+1])
-            dii = 0
-            x_hat = 0
-            sec_term_1 = 0
-            sec_term_2 = np.zeros(self.data.loc[[0]].shape[1])
-
-            gradient_vector = np.zeros(len(self.gamma)) 
-
-            point1 = np.asarray(self.data.loc[[idx]])
-            for vertex in self.data_graph.indices[points]:
-                point2 = np.asarray(self.data.loc[[vertex]])
-                wij = self.similarity_function(idx, vertex)                
-                dii += wij
-                for feature_idx in range(len(self.gamma)):
-                    #diff = np.abs(point1[0][feature_idx] - point2[0][feature_idx])**2
-                    diff = (point1[0][feature_idx] - point2[0][feature_idx])**2
-                    gamma_term = self.gamma[feature_idx]**(-3)
-                    gradient_vector[feature_idx] += diff * gamma_term * 2 * wij        
-                x_hat = x_hat + (wij * point2)    
-            if dii > 0 and not isclose(dii, 0, abs_tol=1e-9):
-                x_hat = np.divide(x_hat, dii, casting='unsafe', dtype=np.longdouble)
-                leading_term_2 = np.divide((self.data.loc[[idx]].to_numpy()[0] - x_hat), dii, casting='unsafe', dtype=np.longdouble)
+            dii = np.sum(self.similarity_matrix[idx])
+            #print("Degree of idx: ", dii)
+            #print("Sim matr row of idx: ", self.similarity_matrix[]
+            #print("vals: ", self.similarity_matrix[idx][0], " ", np.asarray(self.data.loc[[0]])[0], len(self.similarity_matrix[idx]), np.asarray(self.data.loc[[idx]]) )
+            xi_reconstruction = np.sum([self.similarity_matrix[idx][y]*np.asarray(self.data.loc[[y]])[0] for y in range(len(self.similarity_matrix[idx])) if idx != y], 0)
+            #print("First rec: ", xi_reconstruction)
+            if dii != 0 and not isclose(dii, 0, abs_tol=1e-100):
+                xi_reconstruction = np.divide(xi_reconstruction, dii, casting='unsafe', dtype=np.longdouble)
+                #print("Rec in if cond: ", xi_reconstruction)
+                #print("Arr: ", np.asarray(self.data.loc[[idx]])[:1]) 
+                first_term = np.divide((np.asarray(self.data.loc[[idx]])[0] - xi_reconstruction), dii, casting='unsafe', dtype=np.longdouble)
+                #print("First term in if: ", first_term)
             else:
-                x_hat = 0
-                leading_term_2 = np.zeros(len(point2[0]))
-            sec_term_1 = np.multiply(gradient_vector, point2)
-            sec_term_2 = np.multiply(gradient_vector, x_hat)
-            gradient = gradient + (leading_term_2[0] * (sec_term_1[0] - sec_term_2[0]))
+                first_term  = np.zeros_like(xi_reconstruction)
+                #print("First term in else: ", first_term)
 
+                xi_reconstruction  = np.zeros_like(xi_reconstruction)
+                #print("Rec in else: ", xi_reconstruction)
+
+
+            dw_dgamma = np.sum([(2*self.similarity_matrix[idx][y]* (((np.asarray(self.data.loc[[idx]])[0] - np.asarray(self.data.loc[[y]])[0])**2)*self.gamma**(-3))*np.asarray(self.data.loc[[y]])[0]) for y in range(self.data.shape[0]) if idx != y])
+            #print("W der term: ", dw_dgamma)
+            #print("Arr: ", np.asarray(self.data.loc[[idx]])[:5])
+            dD_dgamma = np.sum([(2*self.similarity_matrix[idx][y]* (((np.asarray(self.data.loc[[idx]])[0] - np.asarray(self.data.loc[[y]])[0])**2)*self.gamma**(-3))*xi_reconstruction) for y in range(self.data.shape[0]) if idx != y])
+            #print("D der term: ", dD_dgamma)
+            gradient = gradient + (first_term * (dw_dgamma - dD_dgamma))
+            #print("fin gradient: ", gradient)
         return gradient
+
     def split(self, a, n):
         k, m = divmod(len(a), n)
         return [a[i*k+min(i,m):(i+1)*k+min(i+1,m)] for i in range(n)]
@@ -175,8 +131,8 @@ class aew():
     def gradient_function(self):
         gradient = []
     
-        split_data = self.split(range(self.data_graph.shape[0]), cpu_count())
-        #print(split_data)
+        split_data = self.split(range(self.data.shape[0]), cpu_count())
+        
         with Pool(processes=cpu_count()) as pool:
             gradients = [pool.apply_async(self.gradient_computation, (section, )) \
                                                                  for section in split_data]
@@ -184,31 +140,20 @@ class aew():
             gradients = [gradient.get() for gradient in gradients]
 
         gradient = np.zeros(self.data.loc[[0]].shape[1])
-        #print(gradient)
-        for grad in gradients:
-            gradient = gradient + grad
-        #print(gradient)
 
+        for grad in gradients:
+            #print(grad)
+            #print(gradient)
+            gradient = gradient + grad
+            #print(gradient)
 
         return gradient
-
-    def dW_dsigma(self, point1, point2, pt1_idx, pt2_idx):
-    
-        derivative = []
-
-        for idx in range(len(point1)):
-            wij = self.similarity_function(pt1_idx, pt2_idx)
-            inter_res = 2*wij*((point1[idx]-point2[idx])**2)*self.gamma[idx]**(-3)
-            derivative.append(inter_res)
-
-        return np.asarray(derivative)
-
-    def dD_dsigma(self, dW_vals):
-        return np.sum(dW_vals)
 
     def gradient_descent(self, learning_rate, num_iterations, tol):
         print("Beggining Gradient Descent")
         last_error = -9999999
+        min_error = float('inf')
+        min_gamma = []
         # Perform the gradient descent iterations
         for i in range(num_iterations):
             print("Current Iteration: ", str(i+1))
@@ -222,28 +167,52 @@ class aew():
             if curr_error < tol:
                 break
                 
-            elif last_error < curr_error: 
-                #learning_rate -= .00001 
-                learning_rate /= (1.5)
+            elif last_error - curr_error < -100:   #last_error < curr_error: 
+                if learning_rate > .000000001:
+                    learning_rate -= .00001
+                else:
+                    learning_rate /= (.00001)
 
-            elif last_error > curr_error :
-                #learning_rate += .00001
-                learning_rate *= (1.5)
-                
+           
 
-            #if curr_error < self.min_error:
+            elif last_error - curr_error < 100:
+                learning_rate += .00001
+                #learning_rate *= (1.00002)
+           
+            elif last_error - curr_error > 100 and i < 5:
+                learning_rate *= (.02)
+
+
             last_error = curr_error
+            
+            if curr_error <= min_error and i != 0:
+                min_error = curr_error
+                min_gamma = self.gamma
+
+
             print("Gamma: ", self.gamma)
-            self.gamma = self.gamma + (gradient * learning_rate)
+            self.gamma = (self.gamma + (gradient * learning_rate))
             print("Updated Gamma: ", self.gamma)
-    
+            self.generate_edge_weights()
             print("Updated Learning Rate: ", learning_rate)
+
+        self.gamma = min_gamma
+        print("Updated Final Error: ", min_error)
+        print("Updated Final Gamma: ", self.gamma)
+
+        self.generate_edge_weights()
+        print("Adj Matr: ", self.similarity_matrix[300][:10])
+
+        print("Adj Matr Max: ", np.amax(self.similarity_matrix))
+
+        print("Adj Matr Min: ", np.amin(self.similarity_matrix))
+
         print("Completed Gradient Descent")
 
     def generate_optimal_edge_weights(self, num_iterations):
         print("Generating Optimal Edge Weights")
 
-        self.gradient_descent(.0002, num_iterations, .01)
+        self.gradient_descent(.000002, num_iterations, .01)
 
         #self.gradient_descent(50, num_iterations, .01)
 
@@ -265,7 +234,7 @@ class aew():
 
         #print(self.similarity_matrix)
 
-        split_data = self.split(range(self.data_graph.shape[0]), cpu_count())
+        split_data = self.split(range(self.data.shape[0]), cpu_count())
 
         #print(split_data)
 
@@ -277,7 +246,7 @@ class aew():
         for section in edge_weights:
             for weight in section:
                 #print(weight)
-                if weight[0] != weight[1] and weight[2] > 1*(10*-20):
+                if weight[0] != weight[1]: #and weight[2] > 1*(10*-20):
                     self.similarity_matrix[weight[0]][weight[1]] = weight[2]
                     self.similarity_matrix[weight[1]][weight[0]] = weight[2]
 
@@ -289,7 +258,7 @@ class aew():
         #print("Diagonal 1: ", np.diagonal(self.similarity_matrix))
 
 
-        self.laplacian_normalization()
+        #self.laplacian_normalization()
 
         #print(self.similarity_matrix)
 
@@ -305,19 +274,19 @@ class aew():
 
         #print("Diagonal 3: ", np.diagonal(self.similarity_matrix))
 
-        self.rewrite_edges()
+        #self.rewrite_edges()
 
         self.remove_disconnections()
 
         #self.scale_matrix()
 
-        print(np.any(np.sum(self.similarity_matrix, axis=1) < 0))
+        #print(np.any(np.sum(self.similarity_matrix, axis=1) < 0))
 
-        print(np.any(np.sum(self.similarity_matrix, axis=0) < 0))
+        #print(np.any(np.sum(self.similarity_matrix, axis=0) < 0))
         
-        print(np.any(np.sum(self.similarity_matrix, axis=1) == 0))
+        #print(np.any(np.sum(self.similarity_matrix, axis=1) == 0))
 
-        print(np.any(np.sum(self.similarity_matrix, axis=0) == 0))
+        #print(np.any(np.sum(self.similarity_matrix, axis=0) == 0))
 
         self.eigenvectors = self.get_eigenvectors()
 
@@ -341,14 +310,18 @@ class aew():
             self.data_graph[row, col] = self.similarity_matrix[row, col]
 
     def subtract_identity(self):
-        self.similarity_matrix = np.identity(len(self.similarity_matrix[0])) - self.similarity_matrix
+        identity = np.zeros((len(self.similarity_matrix[0]), len(self.similarity_matrix[0]))) 
+        identity_diag = np.diag(identity)
+        identity_diag_res = identity_diag + 2 
+        np.fill_diagonal(identity, identity_diag_res) 
+        self.similarity_matrix = identity - self.similarity_matrix
 
     def remove_disconnections(self):
         empty_rows = np.all(self.similarity_matrix == 0, axis = 1)
         empty_cols = np.all(self.similarity_matrix == 0, axis = 0)
-        print(self.similarity_matrix[:5])
+        #print(self.similarity_matrix[:5])
         self.similarity_matrix = self.similarity_matrix[~empty_rows, :][:, ~empty_cols]
-        print(self.similarity_matrix[:5])
+        #print(self.similarity_matrix[:5])
         self.labels = self.labels.loc[~empty_rows]
 
     def unit_normalization(self, matrix):
@@ -364,10 +337,10 @@ class aew():
         pca.fit(self.similarity_matrix)
 
         expl_var = pca.explained_variance_ratio_
-        print(expl_var)
+    
         cum_variance = expl_var.cumsum()
 
-        desired_variance = 0.90
+        desired_variance = 0.85
 
         num_components = ( cum_variance <= desired_variance).sum() + 1
 
@@ -379,11 +352,11 @@ class aew():
 
         #print(selected_columns)
 
-        print(pca.fit(self.similarity_matrix).explained_variance_ratio_)
+        print(pca.fit(self.similarity_matrix).explained_variance_ratio_[:5])
 
         #print(pca.fit(self.similarity_matrix).singular_values_)
 
-        pca = PCA(n_components=num_components)
+        pca = PCA(n_components=2)
 
         pca = pca.fit_transform(self.similarity_matrix)
 
