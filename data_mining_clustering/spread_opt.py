@@ -9,6 +9,10 @@ from sklearn.decomposition import PCA
 
 from sklearn.preprocessing import MinMaxScaler
 
+import warnings
+
+warnings.filterwarnings("ignore")
+
 class aew():
     def __init__(self, data_graph, data, labels, precomputed_gamma=np.empty((0,0))):
 
@@ -52,9 +56,12 @@ class aew():
 
         deg_pt1 = np.sum(self.similarity_matrix[pt1_idx])
         deg_pt2 = np.sum(self.similarity_matrix[pt2_idx])
-               
-        similarity_measure = np.sum(((point1 - point2)**2)/(self.gamma **2))
+             
+        #quared_gamma = np.where( np.abs(self.gamma) > .1e-5 ,  self.gamma**2, 0)
+
+        #similarity_measure = np.sum(((point1 - point2)**2)/(squared_gamma))
         
+        similarity_measure = np.sum(np.where(np.abs(self.gamma) > .1e-5, (((point1 - point2)**2)/(self.gamma)), 0))
         similarity_measure = np.exp(-similarity_measure, dtype=np.longdouble)
 
         #print("Sim meas: ", similarity_measure)
@@ -114,11 +121,18 @@ class aew():
                 xi_reconstruction  = np.zeros_like(xi_reconstruction)
                 #print("Rec in else: ", xi_reconstruction)
 
+            
 
-            dw_dgamma = np.sum([(2*self.similarity_matrix[idx][y]* (((np.asarray(self.data.loc[[idx]])[0] - np.asarray(self.data.loc[[y]])[0])**2)*self.gamma**(-3))*np.asarray(self.data.loc[[y]])[0]) for y in range(self.data.shape[0]) if idx != y])
+            cubed_gamma = np.where( np.abs(self.gamma) > .1e-7 ,  self.gamma**(-3), 0)
+
+            #print("gamma: ", self.gamma)
+
+            #print("cubed_gamma: ", cubed_gamma)
+
+            dw_dgamma = np.sum([(2*self.similarity_matrix[idx][y]* (((np.asarray(self.data.loc[[idx]])[0] - np.asarray(self.data.loc[[y]])[0])**2)*cubed_gamma)*np.asarray(self.data.loc[[y]])[0]) for y in range(self.data.shape[0]) if idx != y])
             #print("W der term: ", dw_dgamma)
             #print("Arr: ", np.asarray(self.data.loc[[idx]])[:5])
-            dD_dgamma = np.sum([(2*self.similarity_matrix[idx][y]* (((np.asarray(self.data.loc[[idx]])[0] - np.asarray(self.data.loc[[y]])[0])**2)*self.gamma**(-3))*xi_reconstruction) for y in range(self.data.shape[0]) if idx != y])
+            dD_dgamma = np.sum([(2*self.similarity_matrix[idx][y]* (((np.asarray(self.data.loc[[idx]])[0] - np.asarray(self.data.loc[[y]])[0])**2)*cubed_gamma)*xi_reconstruction) for y in range(self.data.shape[0]) if idx != y])
             #print("D der term: ", dD_dgamma)
             gradient = gradient + (first_term * (dw_dgamma - dD_dgamma))
             #print("fin gradient: ", gradient)
@@ -164,6 +178,11 @@ class aew():
             curr_error = self.objective_function()
             print("Current Error: ", curr_error)
                     
+
+            gradient = np.where(gradient > 0, gradient * -1, gradient)
+
+            print(gradient)
+
             if curr_error < tol:
                 break
                 
@@ -173,14 +192,16 @@ class aew():
                 else:
                     learning_rate /= (.00001)
 
-           
-
             elif last_error - curr_error < 100:
                 learning_rate += .00001
                 #learning_rate *= (1.00002)
            
             elif last_error - curr_error > 100 and i < 5:
-                learning_rate *= (.02)
+                learning_rate *= (1.02)
+
+            elif last_error > 500:
+                learning_rate *= (1.03)
+
 
 
             last_error = curr_error
@@ -276,7 +297,7 @@ class aew():
 
         #self.rewrite_edges()
 
-        self.remove_disconnections()
+        #self.remove_disconnections()
 
         #self.scale_matrix()
 
@@ -340,7 +361,7 @@ class aew():
     
         cum_variance = expl_var.cumsum()
 
-        desired_variance = 0.85
+        desired_variance = 0.90
 
         num_components = ( cum_variance <= desired_variance).sum() + 1
 
@@ -348,7 +369,7 @@ class aew():
 
         #selected_columns = self.similarity_matrix[:,:num_components]
 
-        print(num_components)
+        #print(num_components)
 
         #print(selected_columns)
 
@@ -356,7 +377,7 @@ class aew():
 
         #print(pca.fit(self.similarity_matrix).singular_values_)
 
-        pca = PCA(n_components=2)
+        pca = PCA(n_components=num_components)
 
         pca = pca.fit_transform(self.similarity_matrix)
 

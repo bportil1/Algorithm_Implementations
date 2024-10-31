@@ -465,9 +465,9 @@ class clustering():
 
             print(y[:5])
 
-            #X_obj.generate_optimal_edge_weights(5)
+            X_obj.generate_optimal_edge_weights(3)
 
-            X_obj.generate_edge_weights()
+            #X_obj.generate_edge_weights()
 
             X_aew = X_obj.eigenvectors
                    
@@ -674,7 +674,7 @@ class clustering():
                 )
                 # add black color for outliers (if any)
                 colors = np.append(colors, ["#000000"])
-                plt.scatter(X_aew[:, 0], X_aew[:, 1], s=10, color=colors[y_pred])
+                plt.scatter(X[:, 0], X[:, 1], s=10, color=colors[y_pred])
 
                 plt.title(accuracy_score(y,y_pred))
                 plt.xlim(-3, 3)

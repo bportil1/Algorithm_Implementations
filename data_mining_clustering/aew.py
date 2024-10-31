@@ -5,6 +5,11 @@ from clustering import *
 from sklearn.metrics import accuracy_score
 
 
+import warnings
+
+warnings.filterwarnings("ignore")
+
+
 if __name__ == '__main__':
     #ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
 
@@ -15,7 +20,6 @@ if __name__ == '__main__':
     #synth_clust = clustering()
 
     #synth_clust.synthetic_data_tester()
-
     
     data_obj = data()
 
@@ -75,7 +79,7 @@ if __name__ == '__main__':
     #prec_gamma = np.ones(data_obj.train_data.loc[[0]].shape[1]) * .15 
     
     prec_gamma = np.asarray( [ 1.41185215e-01,  7.47973409e+00, -4.13868954e+01,  6.23689652e+00,
-   1.01395224e+01,  2.95441189e+00,  2.02258776e+00,  1.51630823e+00,
+.01395224e+01,  2.95441189e+00,  2.02258776e+00,  1.51630823e+00,
    2.02617273e+00, -6.30117218e+01,  1.49669532e+01, -8.95148111e+01,
    1.44078287e+02,  5.37490695e+02,  3.94267329e-01, -1.98542978e+00,
    8.01043655e-01,  8.97132437e-01,  1.46472018e+02,  1.44511124e+00,
@@ -115,9 +119,15 @@ if __name__ == '__main__':
 
     #prec_gamma = rng.random(size=(1, 41)) 
 
-    prec_gamma = np.random.randint(0, 200, (1, 41))
+    #prec_gamma = np.random.randint(0, 200, (1, 41))
 
-    prec_gamma = prec_gamma.astype(float)
+    #prec_gamma = prec_gamma.astype(float)
+
+    prec_gamma = np.var(data_obj.train_data, axis=0).values
+
+    print(prec_gamma)
+
+    
 
     aew_train = aew(data_obj.train_graph, data_obj.train_data, data_obj.train_labels, prec_gamma)
 
@@ -125,7 +135,9 @@ if __name__ == '__main__':
 
     #aew_train.generate_edge_weights()
 
-    aew_test = aew(data_obj.test_graph, data_obj.test_data, data_obj.test_labels, aew_train.gamma)
+    prec_gamma = np.var(data_obj.test_data, axis=0).values
+
+    aew_test = aew(data_obj.test_graph, data_obj.test_data, data_obj.test_labels, prec_gamma)
 
     #print(np.isnan(aew_train.similarity_matrix).any())
 
@@ -142,34 +154,36 @@ if __name__ == '__main__':
     #print(len(aew_test.similarity_matrix))
 
     
-    clustering_with_adj_matr_prec_kmeans = SpectralClustering(n_clusters=8, affinity='nearest_neighbors', assign_labels='kmeans', n_jobs=-1)
+    clustering_with_adj_matr_prec_kmeans = SpectralClustering(n_clusters=2, affinity='nearest_neighbors', assign_labels='kmeans', n_jobs=-1)
 
-    print("Kmeans Train: ", accuracy_score(clustering_with_adj_matr_prec_kmeans.fit_predict(aew_train.similarity_matrix), aew_train.labels))
+    print("Kmeans Train: ", accuracy_score(clustering_with_adj_matr_prec_kmeans.fit_predict(aew_train.eigenvectors), aew_train.labels))
 
-    clustering_with_adj_matr_prec_disc = SpectralClustering(n_clusters=8, affinity='nearest_neighbors', assign_labels='discretize', n_jobs=-1)
+    clustering_with_adj_matr_prec_disc = SpectralClustering(n_clusters=2, affinity='nearest_neighbors', assign_labels='discretize', n_jobs=-1)
 
-    print("Discretize Train: ", accuracy_score(clustering_with_adj_matr_prec_disc.fit_predict(aew_train.similarity_matrix), aew_train.labels))
+    print("Discretize Train: ", accuracy_score(clustering_with_adj_matr_prec_disc.fit_predict(aew_train.eigenvectors), aew_train.labels))
 
-    clustering_with_adj_matr_prec_clust = SpectralClustering(n_clusters=8, affinity='nearest_neighbors', assign_labels='cluster_qr', n_jobs=-1)
+    clustering_with_adj_matr_prec_clust = SpectralClustering(n_clusters=2, affinity='nearest_neighbors', assign_labels='cluster_qr', n_jobs=-1)
 
-    print("Cluster_qr Train: ", accuracy_score(clustering_with_adj_matr_prec_clust.fit_predict(aew_train.similarity_matrix), aew_train.labels))
+    print("Cluster_qr Train: ", accuracy_score(clustering_with_adj_matr_prec_clust.fit_predict(aew_train.eigenvectors), aew_train.labels))
 
-    clustering_with_adj_matr_prec_kmeans1 = SpectralClustering(n_clusters=8, affinity='nearest_neighbors', assign_labels='kmeans', n_jobs=-1)
+    clustering_with_adj_matr_prec_kmeans1 = SpectralClustering(n_clusters=2, affinity='nearest_neighbors', assign_labels='kmeans', n_jobs=-1)
 
-    print("Kmeans Test: ", accuracy_score(clustering_with_adj_matr_prec_kmeans.fit_predict(aew_test.similarity_matrix), aew_test.labels))
+    print("Kmeans Test: ", accuracy_score(clustering_with_adj_matr_prec_kmeans1.fit_predict(aew_test.eigenvectors), aew_test.labels))
 
-    clustering_with_adj_matr_prec_disc1 = SpectralClustering(n_clusters=8, affinity='nearest_neighbors', assign_labels='discretize', n_jobs=-1)
+    clustering_with_adj_matr_prec_disc1 = SpectralClustering(n_clusters=2, affinity='nearest_neighbors', assign_labels='discretize', n_jobs=-1)
 
-    print("Discretize Test: ", accuracy_score(clustering_with_adj_matr_prec_disc.fit_predict(aew_test.similarity_matrix), aew_test.labels))
+    print("Discretize Test: ", accuracy_score(clustering_with_adj_matr_prec_disc1.fit_predict(aew_test.eigenvectors), aew_test.labels))
 
-    clustering_with_adj_matr_prec_clust1 = SpectralClustering(n_clusters=8, affinity='nearest_neighbors', assign_labels='cluster_qr', n_jobs=-1)
+    clustering_with_adj_matr_prec_clust1 = SpectralClustering(n_clusters=2, affinity='nearest_neighbors', assign_labels='cluster_qr', n_jobs=-1)
 
-    print("Cluster_qr Test: ", accuracy_score(clustering_with_adj_matr_prec_clust.fit_predict(aew_test.similarity_matrix), aew_test.labels))
+    print("Cluster_qr Test: ", accuracy_score(clustering_with_adj_matr_prec_clust1.fit_predict(aew_test.eigenvectors), aew_test.labels))
+    
     
     plain_graph_clustering = clustering(aew_train.eigenvectors, aew_train.labels, aew_test.eigenvectors, aew_test.labels, "full", "40_dim_no_proj_graph_data", clustering_methods=clustering_meths,  workers = -1)
 
     plain_graph_clustering.generate_clustering()
-    '''
+
+'''
     num_components = [3, 8, 12, 15, 20, 40]
 
     for num_comp in num_components:
