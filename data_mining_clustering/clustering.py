@@ -448,7 +448,7 @@ class clustering():
 
             X_df = pd.DataFrame(X)
 
-            print(X)
+            #print(X)
 
             X_data = data(train_data = X_df)
 
@@ -456,16 +456,16 @@ class clustering():
 
             X_graph = X_data.train_graph
 
-            print(y[:5])
+            #print(y[:5])
             y_df = pd.DataFrame(y)
 
             X_obj = aew(X_graph, X_df, y_df, np.asarray([-.1,-.121], dtype=np.longdouble))
 
             y = y_df[y_df.columns[0]].values
 
-            print(y[:5])
+            #print(y[:5])
 
-            X_obj.generate_optimal_edge_weights(3)
+            X_obj.generate_optimal_edge_weights(20)
 
             #X_obj.generate_edge_weights()
 

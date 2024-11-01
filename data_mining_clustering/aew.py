@@ -13,14 +13,16 @@ warnings.filterwarnings("ignore")
 if __name__ == '__main__':
     #ids_train_file = '/home/bryan_portillo/Desktop/network_intrusion_detection_dataset/Train_data.csv'
 
-    ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
+    #ids_train_file = '/media/mint/NethermostHallV2/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
 
     #ids_train_file = '/home/bryanportillo_lt/Documents/py_env/venv/network_intrusion_dataset/Train_data.csv'
+   
+    ids_train_file = 'e:/py_env/venv/network_intrusion_detection_dataset/Train_data.csv'
     
-    #synth_clust = clustering()
+    synth_clust = clustering()
 
-    #synth_clust.synthetic_data_tester()
-    
+    synth_clust.synthetic_data_tester()
+    '''
     data_obj = data()
 
     data_obj.load_data(ids_train_file, 'train')
@@ -36,7 +38,7 @@ if __name__ == '__main__':
     data_obj.encode_categorical('flag', 'data')
 
     data_obj.encode_categorical('class', 'labels')
-   
+
     #print(data_obj.train_data.tail(10))
     #print(data_obj.train_labels.tail(5))
 
@@ -131,7 +133,7 @@ if __name__ == '__main__':
 
     aew_train = aew(data_obj.train_graph, data_obj.train_data, data_obj.train_labels, prec_gamma)
 
-    aew_train.generate_optimal_edge_weights(5)
+    aew_train.generate_optimal_edge_weights(50)
 
     #aew_train.generate_edge_weights()
 
@@ -183,6 +185,7 @@ if __name__ == '__main__':
 
     plain_graph_clustering.generate_clustering()
 
+'''
 '''
     num_components = [3, 8, 12, 15, 20, 40]
 
