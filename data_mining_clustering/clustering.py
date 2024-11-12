@@ -459,13 +459,15 @@ class clustering():
             #print(y[:5])
             y_df = pd.DataFrame(y)
 
-            X_obj = aew(X_graph, X_df, y_df, np.asarray([-.1,-.121], dtype=np.longdouble))
+            prec_gamma = np.var(X_data.train_data, axis=0).values
+
+            X_obj = aew(X_graph, X_df, y_df, prec_gamma)
 
             y = y_df[y_df.columns[0]].values
 
             #print(y[:5])
 
-            X_obj.generate_optimal_edge_weights(20)
+            X_obj.generate_optimal_edge_weights(10)
 
             #X_obj.generate_edge_weights()
 

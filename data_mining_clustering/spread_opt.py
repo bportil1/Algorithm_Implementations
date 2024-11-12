@@ -193,7 +193,7 @@ class aew():
                     learning_rate /= (.00001)
 
             elif last_error - curr_error < 100:
-                learning_rate += .00001
+                learning_rate += .000001
                 #learning_rate *= (1.00002)
            
             elif last_error - curr_error > 100 and i < 5:
@@ -350,9 +350,6 @@ class aew():
         return matrix/norms
 
     def get_eigenvectors(self):
-        #eigenvalues, eigenvectors = np.linalg.eig(self.similarity_matrix)
-        #print(eigenvalues/sum(eigenvalues))
-        
         pca = PCA()
 
         pca.fit(self.similarity_matrix)
@@ -373,7 +370,7 @@ class aew():
 
         #print(selected_columns)
 
-        print(pca.fit(self.similarity_matrix).explained_variance_ratio_[:5])
+        #print(pca.fit(self.similarity_matrix).explained_variance_ratio_[:5])
 
         #print(pca.fit(self.similarity_matrix).singular_values_)
 
